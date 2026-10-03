@@ -76,8 +76,14 @@ public class MemoryRepository : IMemoryRepository
             .Include(m => m.Photos)
             .Include(m => m.MemoryTags)
                 .ThenInclude(mt => mt.Tag)
-            .Where(m => m.UserId == filter.UserId && m.Status == 1)
+            .Include(m => m.User)
+            .Where(m => m.Status == 1)
             .AsQueryable();
+
+        if (filter.UserId.HasValue)
+        {
+            query = query.Where(m => m.UserId == filter.UserId.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.Keyword))
         {
@@ -152,14 +158,19 @@ public class MemoryRepository : IMemoryRepository
         };
     }
 
-    public async Task<List<Memory>> GetMapPinsAsync(int userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to)
+    public async Task<List<Memory>> GetMapPinsAsync(int? userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to)
     {
         var query = _context.Memories
             .Include(m => m.Category)
             .Include(m => m.Mood)
             .Include(m => m.Photos)
-            .Where(m => m.UserId == userId && m.Status == 1)
+            .Where(m => m.Status == 1)
             .AsQueryable();
+
+        if (userId.HasValue)
+        {
+            query = query.Where(m => m.UserId == userId.Value);
+        }
 
         if (categoryId.HasValue && categoryId.Value > 0)
         {

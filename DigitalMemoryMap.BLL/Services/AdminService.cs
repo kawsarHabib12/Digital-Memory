@@ -113,7 +113,9 @@ public class AdminService : IAdminService
                     : m.Title,
                 CoverPhotoUrl = cover != null ? $"/api/photos/{cover.PhotoId}/file" : null,
                 Category = m.Category?.Name ?? string.Empty,
-                MoodEmoji = m.Mood?.Emoji
+                MoodEmoji = m.Mood?.Emoji,
+                UserName = m.User?.FullName,
+                UserEmail = m.User?.Email
             };
         }).ToList();
 

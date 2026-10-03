@@ -100,6 +100,8 @@ public class MemoryListItemDto
     public string? CoverPhotoUrl { get; set; }
     public string Category { get; set; } = string.Empty;
     public string? MoodEmoji { get; set; }
+    public string? UserName { get; set; }
+    public string? UserEmail { get; set; }
 }
 
 public class MapPinDto

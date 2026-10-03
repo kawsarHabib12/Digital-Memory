@@ -4,7 +4,7 @@ namespace DigitalMemoryMap.DAL.Interfaces;
 
 public class MemoryFilterParams
 {
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
     public string? Keyword { get; set; }
     public string? Location { get; set; }
     public DateTime? Date { get; set; }
@@ -48,7 +48,7 @@ public interface IMemoryRepository
     Task UpdateAsync(Memory memory);
     Task DeleteAsync(Memory memory);
     Task<PagedResult<Memory>> GetPagedMemoriesAsync(MemoryFilterParams filter);
-    Task<List<Memory>> GetMapPinsAsync(int userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to);
+    Task<List<Memory>> GetMapPinsAsync(int? userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to);
     Task<List<Memory>> GetNearbyMemoriesAsync(int userId, decimal lat, decimal lng, double radiusKm);
     Task<PagedResult<Memory>> GetAllForAdminAsync(int page, int pageSize, string? keyword);
     Task<int> GetTotalCountAsync();

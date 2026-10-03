@@ -76,9 +76,18 @@ public class MemoryService : IMemoryService
         return await GetMemoryDetailsAsync(saved.MemoryId, userId);
     }
 
-    public async Task<MemoryDetailsDto> GetMemoryDetailsAsync(int memoryId, int userId)
+    public async Task<MemoryDetailsDto> GetMemoryDetailsAsync(int memoryId, int? userId)
     {
-        var memory = await _memoryRepository.GetByIdAndUserIdAsync(memoryId, userId);
+        Memory? memory;
+        if (!userId.HasValue || userId.Value == 0)
+        {
+            memory = await _memoryRepository.GetByIdAsync(memoryId);
+        }
+        else
+        {
+            memory = await _memoryRepository.GetByIdAndUserIdAsync(memoryId, userId.Value);
+        }
+
         if (memory == null)
         {
             throw new NotFoundException("Memory not found.");
@@ -178,7 +187,7 @@ public class MemoryService : IMemoryService
         };
     }
 
-    public async Task<List<MapPinDto>> GetMapPinsAsync(int userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to)
+    public async Task<List<MapPinDto>> GetMapPinsAsync(int? userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to)
     {
         var memories = await _memoryRepository.GetMapPinsAsync(userId, categoryId, moodId, from, to);
 

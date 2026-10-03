@@ -370,7 +370,48 @@ const MockBackend = {
             ];
         }
         if (path === '/api/admin/memories') {
-            return getStoredMemories();
+            const list = getStoredMemories();
+            const keyword = (params.get('keyword') || '').toLowerCase();
+            let filtered = [...list];
+            if (keyword) {
+                filtered = filtered.filter(m => 
+                    (m.title && m.title.toLowerCase().includes(keyword)) ||
+                    (m.locationName && m.locationName.toLowerCase().includes(keyword)) ||
+                    ((m.userName || '').toLowerCase().includes(keyword)) ||
+                    ((m.userEmail || '').toLowerCase().includes(keyword))
+                );
+            }
+            const page = parseInt(params.get('page') || '1');
+            const pageSize = parseInt(params.get('pageSize') || '15');
+            const startIndex = (page - 1) * pageSize;
+            const paged = filtered.slice(startIndex, startIndex + pageSize);
+
+            return {
+                items: paged.map(m => ({
+                    ...m,
+                    userName: m.userName || (m.userId === 1 ? 'System Admin' : 'Archivist Member'),
+                    userEmail: m.userEmail || (m.userId === 1 ? 'admin@digitalmemory.com' : 'user@digitalmemory.io'),
+                    category: m.categoryName || m.category || 'Travel',
+                    moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📌'),
+                    snippet: m.description ? (m.description.substring(0, 100) + (m.description.length > 100 ? '...' : '')) : (m.title || '')
+                })),
+                totalItems: filtered.length,
+                page: page,
+                pageSize: pageSize,
+                totalPages: Math.max(1, Math.ceil(filtered.length / pageSize))
+            };
+        }
+
+        const adminDeleteMatch = path.match(/^\/api\/admin\/memories\/(\d+)/);
+        if (adminDeleteMatch) {
+            const id = parseInt(adminDeleteMatch[1]);
+            const list = getStoredMemories();
+            const idx = list.findIndex(m => m.memoryId === id);
+            if (idx !== -1) {
+                list.splice(idx, 1);
+                saveStoredMemories(list);
+            }
+            return { message: "Memory removed by admin." };
         }
 
         return {};

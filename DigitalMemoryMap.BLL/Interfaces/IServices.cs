@@ -20,17 +20,17 @@ public interface IUserService
 public interface IMemoryService
 {
     Task<MemoryDetailsDto> CreateMemoryAsync(int userId, CreateMemoryDto dto);
-    Task<MemoryDetailsDto> GetMemoryDetailsAsync(int memoryId, int userId);
+    Task<MemoryDetailsDto> GetMemoryDetailsAsync(int memoryId, int? userId);
     Task<MemoryDetailsDto> UpdateMemoryAsync(int memoryId, int userId, UpdateMemoryDto dto);
     Task DeleteMemoryAsync(int memoryId, int userId);
     Task<PagedResultDto<MemoryListItemDto>> GetPagedMemoriesAsync(MemoryFilterRequestDto filter);
-    Task<List<MapPinDto>> GetMapPinsAsync(int userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to);
+    Task<List<MapPinDto>> GetMapPinsAsync(int? userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to);
     Task<List<MemoryListItemDto>> GetNearbyMemoriesAsync(int userId, decimal lat, decimal lng, double radiusKm);
 }
 
 public class MemoryFilterRequestDto
 {
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
     public string? Keyword { get; set; }
     public string? Location { get; set; }
     public DateTime? Date { get; set; }

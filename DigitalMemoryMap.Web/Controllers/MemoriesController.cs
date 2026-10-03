@@ -19,7 +19,10 @@ public class MemoriesController : BaseApiController
     [HttpGet]
     public async Task<IActionResult> GetMemories([FromQuery] MemoryFilterRequestDto filter)
     {
-        filter.UserId = CurrentUserId;
+        if (!User.IsInRole("Admin"))
+        {
+            filter.UserId = CurrentUserId;
+        }
         var result = await _memoryService.GetPagedMemoriesAsync(filter);
         return Ok(result);
     }
@@ -27,7 +30,10 @@ public class MemoriesController : BaseApiController
     [HttpGet("search")]
     public async Task<IActionResult> SearchMemories([FromQuery] MemoryFilterRequestDto filter)
     {
-        filter.UserId = CurrentUserId;
+        if (!User.IsInRole("Admin"))
+        {
+            filter.UserId = CurrentUserId;
+        }
         var result = await _memoryService.GetPagedMemoriesAsync(filter);
         return Ok(result);
     }
@@ -39,7 +45,8 @@ public class MemoriesController : BaseApiController
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to)
     {
-        var pins = await _memoryService.GetMapPinsAsync(CurrentUserId, categoryId, moodId, from, to);
+        var targetUserId = User.IsInRole("Admin") ? (int?)null : CurrentUserId;
+        var pins = await _memoryService.GetMapPinsAsync(targetUserId, categoryId, moodId, from, to);
         return Ok(pins);
     }
 
@@ -56,7 +63,8 @@ public class MemoriesController : BaseApiController
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetails(int id)
     {
-        var memory = await _memoryService.GetMemoryDetailsAsync(id, CurrentUserId);
+        var targetUserId = User.IsInRole("Admin") ? (int?)null : CurrentUserId;
+        var memory = await _memoryService.GetMemoryDetailsAsync(id, targetUserId);
         return Ok(memory);
     }
 
