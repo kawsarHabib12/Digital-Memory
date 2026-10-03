@@ -83,7 +83,12 @@
                         return `
                             <tr>
                                 <td>
-                                    <div style="font-weight: 700; color: #0a0a0c;">${escapeHtml(m.title)}</div>
+                                    <div style="display:flex; align-items:center; gap:0.4rem; margin-bottom:0.25rem;">
+                                        <span class="badge ${m.visibility === 0 ? 'badge-warning' : 'badge-neutral'}" style="font-size:0.65rem; padding:0.15rem 0.4rem;">
+                                            ${m.visibility === 0 ? '🔒 Private' : '🌐 Public'}
+                                        </span>
+                                        <span style="font-weight: 700; color: #0a0a0c;">${escapeHtml(m.title)}</span>
+                                    </div>
                                     <div style="font-size: 0.8rem; color: var(--text-secondary); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                         ${escapeHtml(m.snippet || '')}
                                     </div>

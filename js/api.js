@@ -37,6 +37,10 @@ function getInitialDemoMemories() {
     return [
         {
             memoryId: 1,
+            userId: 1,
+            userName: "Atlas Curator",
+            userEmail: "demo@digitalmemory.io",
+            visibility: 1, // Public
             title: "SAM'S APARTMENT ROOFTOP & VINYL NIGHT",
             description: "Analog records spinning, late night tea and deep conversation overlooking the cityscape.",
             memoryDate: "2026-08-14T20:30:00Z",
@@ -57,6 +61,10 @@ function getInitialDemoMemories() {
         },
         {
             memoryId: 2,
+            userId: 1,
+            userName: "Atlas Curator",
+            userEmail: "demo@digitalmemory.io",
+            visibility: 1, // Public
             title: "COASTAL TIDE LINE AT DAWN",
             description: "Golden hour sea foam rolling over black volcanic sands. Complete silence and morning salt breeze.",
             memoryDate: "2026-06-22T06:15:00Z",
@@ -77,6 +85,10 @@ function getInitialDemoMemories() {
         },
         {
             memoryId: 3,
+            userId: 1,
+            userName: "Atlas Curator",
+            userEmail: "demo@digitalmemory.io",
+            visibility: 1, // Public
             title: "CROSSING THE ALPINE HIGH PASS",
             description: "A 400-mile road trip cutting through fog and high elevation pines. Crisp crisp alpine air.",
             memoryDate: "2026-04-10T14:45:00Z",
@@ -98,18 +110,69 @@ function getInitialDemoMemories() {
     ];
 }
 
-function getStoredMemories() {
-    const raw = localStorage.getItem(DEMO_STORAGE_KEY);
+const DEMO_USERS_KEY = 'dmm_demo_users_v2';
+
+function getStoredUsers() {
+    const raw = localStorage.getItem(DEMO_USERS_KEY);
     if (!raw) {
-        const initial = getInitialDemoMemories();
-        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(initial));
+        const initial = [
+            { userId: 999, email: "admin@digitalmemory.com", fullName: "Chief Archivist", role: "Admin", password: "Admin@123" },
+            { userId: 1, email: "demo@digitalmemory.io", fullName: "Atlas Curator", role: "User", password: "User@123" }
+        ];
+        localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(initial));
         return initial;
     }
     try {
         return JSON.parse(raw);
     } catch {
-        return getInitialDemoMemories();
+        return [];
     }
+}
+
+function saveStoredUsers(users) {
+    localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(users));
+}
+
+function getStoredMemories() {
+    const raw = localStorage.getItem(DEMO_STORAGE_KEY);
+    let list = [];
+    if (!raw) {
+        list = getInitialDemoMemories();
+        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(list));
+        return list;
+    }
+    try {
+        list = JSON.parse(raw);
+    } catch {
+        list = getInitialDemoMemories();
+    }
+
+    // Ensure all stored records have valid security classification (0 Private, 1 Public) & user metadata
+    let hasChanges = false;
+    list = list.map(m => {
+        let vis = m.visibility;
+        if (vis === undefined || vis === null) {
+            vis = 1; // Default legacy sample items to public
+            hasChanges = true;
+        }
+        let uId = m.userId;
+        if (!uId) {
+            uId = 1;
+            hasChanges = true;
+        }
+        return {
+            ...m,
+            visibility: parseInt(vis),
+            userId: parseInt(uId),
+            userName: m.userName || 'Archivist',
+            userEmail: m.userEmail || 'curator@digitalmemory.io'
+        };
+    });
+
+    if (hasChanges) {
+        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(list));
+    }
+    return list;
 }
 
 function saveStoredMemories(memories) {
@@ -133,22 +196,71 @@ const MockBackend = {
             if (!user) throw new Error('Unauthorized');
             return user;
         }
-        if (path === '/api/auth/login' || path === '/api/auth/register') {
+
+        if (path === '/api/auth/register') {
             let body = {};
             if (options.body) {
                 try { body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch {}
             }
-            const email = body.email || "curator@digitalmemory.io";
-            const isAdmin = email.toLowerCase().includes('admin');
-            const user = {
-                userId: 1,
-                fullName: body.fullName || (email.split('@')[0].toUpperCase()),
+            const email = (body.email || "").trim().toLowerCase();
+            if (!email) throw new Error("Email is required.");
+            const users = getStoredUsers();
+            const existing = users.find(u => u.email.toLowerCase() === email);
+            if (existing) {
+                throw new Error("An account with this email address already exists.");
+            }
+            const isAdmin = email.includes('admin');
+            const newUser = {
+                userId: Date.now(),
                 email: email,
+                fullName: body.fullName || (email.split('@')[0].toUpperCase()),
+                password: body.password || "Password@123",
                 role: isAdmin ? "Admin" : "User"
             };
-            Auth.setUser(user);
-            return user;
+            users.push(newUser);
+            saveStoredUsers(users);
+
+            const userToReturn = {
+                userId: newUser.userId,
+                fullName: newUser.fullName,
+                email: newUser.email,
+                role: newUser.role
+            };
+            Auth.setUser(userToReturn);
+            return userToReturn;
         }
+
+        if (path === '/api/auth/login') {
+            let body = {};
+            if (options.body) {
+                try { body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch {}
+            }
+            const email = (body.email || "").trim().toLowerCase();
+            const users = getStoredUsers();
+            let matched = users.find(u => u.email.toLowerCase() === email);
+            if (!matched) {
+                const isAdmin = email.includes('admin');
+                const uId = isAdmin ? 999 : (email === 'demo@digitalmemory.io' ? 1 : Math.abs(email.split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0)));
+                matched = {
+                    userId: uId,
+                    email: email || "curator@digitalmemory.io",
+                    fullName: body.fullName || (email ? email.split('@')[0].toUpperCase() : "CURATOR"),
+                    password: body.password || "Password@123",
+                    role: isAdmin ? "Admin" : "User"
+                };
+                users.push(matched);
+                saveStoredUsers(users);
+            }
+            const userToReturn = {
+                userId: matched.userId,
+                fullName: matched.fullName,
+                email: matched.email,
+                role: matched.role
+            };
+            Auth.setUser(userToReturn);
+            return userToReturn;
+        }
+
         if (path === '/api/auth/logout') {
             Auth.clearUser();
             return { message: "Logged out" };
@@ -159,25 +271,45 @@ const MockBackend = {
         if (path === '/api/moods') return DEMO_MOODS;
         if (path === '/api/tags') return DEMO_TAGS;
 
-        // Memories Stats
+        // Current User & Security Context
+        const currentUser = Auth.getUser();
+        const isAdmin = currentUser && currentUser.role === 'Admin';
+
+        // Memories Stats (Scoped to current user's archive or admin total)
         if (path === '/api/memories/stats') {
             const list = getStoredMemories();
+            const userList = list.filter(m => {
+                if (isAdmin) return true;
+                if (currentUser) return m.userId === currentUser.userId;
+                return m.visibility === 1;
+            });
             return {
-                totalMemories: list.length,
-                totalLocations: new Set(list.map(m => m.locationName)).size,
-                totalPhotos: list.reduce((sum, m) => sum + (m.photoCount || (m.photos ? m.photos.length : 1)), 0),
+                totalMemories: userList.length,
+                totalLocations: new Set(userList.map(m => m.locationName)).size,
+                totalPhotos: userList.reduce((sum, m) => sum + (m.photoCount || (m.photos ? m.photos.length : 1)), 0),
                 favoriteCategory: "Travel & Expeditions"
             };
         }
 
-        // Map Pins endpoint
+        // Map Pins endpoint:
+        // - Admin: sees all pins
+        // - Logged in User: sees THEIR OWN pins (both private 🔒 & public 🌐) + OTHER USERS' PUBLIC pins (🌐)
+        // - NEVER shows another user's private pin (visibility === 0)
         if (path === '/api/memories/map') {
             const list = getStoredMemories();
+            let filtered = list.filter(m => {
+                if (isAdmin) return true;
+                if (currentUser) {
+                    return m.userId === currentUser.userId || m.visibility === 1;
+                }
+                return m.visibility === 1;
+            });
+
             const catId = params.get('categoryId');
             const moodId = params.get('moodId');
-            let filtered = [...list];
             if (catId) filtered = filtered.filter(m => m.categoryId == catId);
             if (moodId) filtered = filtered.filter(m => m.moodId == moodId);
+
             return filtered.map(m => ({
                 memoryId: m.memoryId,
                 title: m.title,
@@ -185,16 +317,24 @@ const MockBackend = {
                 latitude: parseFloat(m.latitude),
                 longitude: parseFloat(m.longitude),
                 locationName: m.locationName,
+                visibility: m.visibility,
                 category: m.categoryName || m.category || 'Travel',
                 moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📍'),
                 thumbnailUrl: m.coverPhotoUrl || (m.photos && m.photos[0] ? m.photos[0].photoUrl : null)
             }));
         }
 
-        // Nearby endpoint
+        // Nearby endpoint (Filtered with privacy rule)
         if (path === '/api/memories/nearby') {
             const list = getStoredMemories();
-            return list.map(m => ({
+            const filtered = list.filter(m => {
+                if (isAdmin) return true;
+                if (currentUser) {
+                    return m.userId === currentUser.userId || m.visibility === 1;
+                }
+                return m.visibility === 1;
+            });
+            return filtered.map(m => ({
                 memoryId: m.memoryId,
                 title: m.title,
                 memoryDate: m.memoryDate,
@@ -205,11 +345,38 @@ const MockBackend = {
             }));
         }
 
-        // Memories List, Filter & Creation
+        // Memories List & Search:
+        // - /api/memories (Personal Archive & Dashboard):
+        //     Admin -> sees all
+        //     User  -> sees ONLY their own memories (dashboard shows user's personal entries)
+        //     Guest -> sees only public memories
+        // - /api/memories/search (Global Search Registry):
+        //     Admin -> searches all
+        //     User  -> searches their own (private + public) AND other users' public entries
+        //     Guest -> searches only public entries
         if (path === '/api/memories' || path === '/api/memories/search') {
             const list = getStoredMemories();
             if (method === 'GET') {
-                let filtered = [...list];
+                let filtered = [];
+                if (path === '/api/memories/search') {
+                    filtered = list.filter(m => {
+                        if (isAdmin) return true;
+                        if (currentUser) {
+                            return m.userId === currentUser.userId || m.visibility === 1;
+                        }
+                        return m.visibility === 1;
+                    });
+                } else {
+                    // /api/memories: user dashboard / personal dossier stream
+                    filtered = list.filter(m => {
+                        if (isAdmin) return true;
+                        if (currentUser) {
+                            return m.userId === currentUser.userId;
+                        }
+                        return m.visibility === 1;
+                    });
+                }
+
                 const search = params.get('search') || params.get('keyword');
                 const loc = params.get('location');
                 const catId = params.get('categoryId');
@@ -255,6 +422,7 @@ const MockBackend = {
 
             if (method === 'POST') {
                 let newMem = {};
+                let visValue = 0;
                 if (options.body instanceof FormData) {
                     newMem = {
                         title: options.body.get('title') || 'Untitled Memory',
@@ -266,17 +434,24 @@ const MockBackend = {
                         categoryId: parseInt(options.body.get('categoryId')) || 1,
                         moodId: parseInt(options.body.get('moodId')) || null
                     };
+                    visValue = options.body.get('visibility') !== null ? parseInt(options.body.get('visibility')) : 0;
                 } else {
                     try {
                         newMem = typeof options.body === 'string' ? JSON.parse(options.body) : (options.body || {});
                     } catch {}
+                    visValue = newMem.visibility !== undefined && newMem.visibility !== null ? parseInt(newMem.visibility) : 0;
                 }
 
+                const author = Auth.getUser() || { userId: 1, fullName: 'Atlas Curator', email: 'demo@digitalmemory.io', role: 'User' };
                 const cat = DEMO_CATEGORIES.find(c => c.categoryId === parseInt(newMem.categoryId)) || DEMO_CATEGORIES[0];
                 const mood = DEMO_MOODS.find(m => m.moodId === parseInt(newMem.moodId)) || null;
 
                 const created = {
                     memoryId: Date.now(),
+                    userId: author.userId,
+                    userName: author.fullName,
+                    userEmail: author.email,
+                    visibility: visValue, // 0 = Private Dossier, 1 = Public Registry
                     title: newMem.title || 'Untitled Memory',
                     description: newMem.description || '',
                     memoryDate: newMem.memoryDate || new Date().toISOString(),
@@ -310,7 +485,7 @@ const MockBackend = {
             return { message: 'Photo uploaded successfully' };
         }
 
-        // Memory By ID
+        // Memory By ID (Protected with privacy access verification)
         const memDetailMatch = path.match(/^\/api\/memories\/(\d+)/);
         if (memDetailMatch) {
             const id = parseInt(memDetailMatch[1]);
@@ -319,23 +494,45 @@ const MockBackend = {
 
             if (method === 'GET') {
                 if (idx === -1) throw new Error('Memory not found');
-                return list[idx];
-            }
-            if (method === 'DELETE') {
-                if (idx !== -1) {
-                    list.splice(idx, 1);
-                    saveStoredMemories(list);
+                const mem = list[idx];
+
+                // If private memory (visibility === 0), verify authorization:
+                if (mem.visibility === 0) {
+                    if (!currentUser) {
+                        throw new Error('This dossier is private. Please sign in to view.');
+                    }
+                    if (!isAdmin && mem.userId !== currentUser.userId) {
+                        throw new Error('This dossier is confidential to its author.');
+                    }
                 }
+                return mem;
+            }
+
+            if (method === 'DELETE') {
+                if (idx === -1) throw new Error('Memory not found');
+                const mem = list[idx];
+                if (!isAdmin && (!currentUser || mem.userId !== currentUser.userId)) {
+                    throw new Error('Unauthorized: You can only remove your own memories.');
+                }
+                list.splice(idx, 1);
+                saveStoredMemories(list);
                 return { success: true };
             }
+
             if (method === 'PUT') {
+                if (idx === -1) throw new Error('Memory not found');
+                const mem = list[idx];
+                if (!isAdmin && (!currentUser || mem.userId !== currentUser.userId)) {
+                    throw new Error('Unauthorized: You can only update your own memories.');
+                }
                 let updateData = {};
                 try { updateData = JSON.parse(options.body); } catch {}
-                if (idx !== -1) {
-                    list[idx] = { ...list[idx], ...updateData };
-                    saveStoredMemories(list);
-                    return list[idx];
+                if (updateData.visibility !== undefined) {
+                    updateData.visibility = parseInt(updateData.visibility);
                 }
+                list[idx] = { ...list[idx], ...updateData };
+                saveStoredMemories(list);
+                return list[idx];
             }
         }
 
@@ -350,10 +547,11 @@ const MockBackend = {
         // Admin Endpoints
         if (path === '/api/admin/stats') {
             const list = getStoredMemories();
+            const users = getStoredUsers();
             return {
-                totalUsers: 14,
-                activeUsers: 12,
-                newUsersThisWeek: 4,
+                totalUsers: users.length,
+                activeUsers: users.length,
+                newUsersThisWeek: 2,
                 totalMemories: list.length,
                 totalPhotos: list.reduce((sum, m) => sum + (m.photoCount || (m.photos ? m.photos.length : 1)), 0),
                 categoryStats: DEMO_CATEGORIES.map(c => ({
@@ -363,11 +561,15 @@ const MockBackend = {
             };
         }
         if (path === '/api/admin/users') {
-            return [
-                { userId: 1, fullName: "System Admin", email: "admin@digitalmemory.com", role: "Admin", isActive: true, createdAt: "2026-01-01T00:00:00Z" },
-                { userId: 2, fullName: "Kawsar Habib", email: "kawsar@digitalmemory.io", role: "User", isActive: true, createdAt: "2026-02-15T00:00:00Z" },
-                { userId: 3, fullName: "Archivist Member", email: "member@digitalmemory.io", role: "User", isActive: true, createdAt: "2026-03-10T00:00:00Z" }
-            ];
+            const users = getStoredUsers();
+            return users.map(u => ({
+                userId: u.userId,
+                fullName: u.fullName,
+                email: u.email,
+                role: u.role,
+                isActive: true,
+                createdAt: "2026-01-01T00:00:00Z"
+            }));
         }
         if (path === '/api/admin/memories') {
             const list = getStoredMemories();
@@ -389,8 +591,8 @@ const MockBackend = {
             return {
                 items: paged.map(m => ({
                     ...m,
-                    userName: m.userName || (m.userId === 1 ? 'System Admin' : 'Archivist Member'),
-                    userEmail: m.userEmail || (m.userId === 1 ? 'admin@digitalmemory.com' : 'user@digitalmemory.io'),
+                    userName: m.userName || 'Archivist Member',
+                    userEmail: m.userEmail || 'user@digitalmemory.io',
                     category: m.categoryName || m.category || 'Travel',
                     moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📌'),
                     snippet: m.description ? (m.description.substring(0, 100) + (m.description.length > 100 ? '...' : '')) : (m.title || '')

@@ -205,7 +205,10 @@
                                 }
                                 <div style="flex:1; min-width:0;">
                                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.25rem;">
-                                        <span class="badge badge-neutral" style="font-size:0.68rem; padding:0.15rem 0.4rem;">${escapeHtml(m.category)}</span>
+                                        <div style="display:flex; align-items:center; gap:0.35rem;">
+                                            <span class="badge badge-neutral" style="font-size:0.68rem; padding:0.15rem 0.4rem;">${escapeHtml(m.category)}</span>
+                                            ${m.visibility === 0 ? '<span class="badge badge-warning" style="font-size:0.65rem; padding:0.12rem 0.35rem;">🔒 Private</span>' : ''}
+                                        </div>
                                         <span class="mono-text" style="font-size:0.75rem; font-weight:700;">${dateFormatted}</span>
                                     </div>
                                     <a href="memory-details.html?id=${m.memoryId}" style="font-size:1rem; font-weight:700; color:#0a0a0c; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; letter-spacing:-0.01em;">
