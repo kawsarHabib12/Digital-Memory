@@ -94,7 +94,10 @@
 
                 <!-- Mood Selector -->
                 <div class="form-group">
-                    <label class="form-label">EMOTIONAL MOOD STAMP</label>
+                    <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>EMOTIONAL MOOD STAMP</span>
+                        <span id="selected-mood-name" class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">OPTIONAL // NONE SELECTED</span>
+                    </label>
                     <div id="mood-picker-container" class="mood-picker"></div>
                     <input type="hidden" id="selected-mood-id">
                 </div>
@@ -320,16 +323,25 @@
                 });
 
                 const moodContainer = document.getElementById('mood-picker-container');
+                const selectedMoodName = document.getElementById('selected-mood-name');
                 moods.forEach(m => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'mood-btn';
                     btn.dataset.id = m.moodId;
-                    btn.innerHTML = `<span>${m.emoji}</span> <span>${escapeHtml(m.name.toUpperCase())}</span>`;
+                    btn.innerHTML = `<span style="font-size: 1.15rem;">${m.emoji}</span> <span>${escapeHtml(m.name.toUpperCase())}</span>`;
                     btn.addEventListener('click', () => {
+                        const isAlreadySelected = btn.classList.contains('selected');
                         moodContainer.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-                        btn.classList.add('selected');
-                        document.getElementById('selected-mood-id').value = m.moodId;
+                        
+                        if (isAlreadySelected) {
+                            document.getElementById('selected-mood-id').value = '';
+                            if (selectedMoodName) selectedMoodName.textContent = 'OPTIONAL // NONE SELECTED';
+                        } else {
+                            btn.classList.add('selected');
+                            document.getElementById('selected-mood-id').value = m.moodId;
+                            if (selectedMoodName) selectedMoodName.textContent = `SELECTED: ${m.name.toUpperCase()} ${m.emoji}`;
+                        }
                     });
                     moodContainer.appendChild(btn);
                 });
@@ -412,10 +424,17 @@
                     setPinLocation(memory.latitude, memory.longitude, memory.locationName);
                     pickerMap.setView([memory.latitude, memory.longitude], 12);
 
-                    if (memory.mood) {
-                        document.getElementById('selected-mood-id').value = memory.mood.moodId;
-                        const moodBtn = document.querySelector(`.mood-btn[data-id="${memory.mood.moodId}"]`);
-                        if (moodBtn) moodBtn.classList.add('selected');
+                    const curMoodId = memory.moodId || (memory.mood ? memory.mood.moodId : null);
+                    if (curMoodId) {
+                        document.getElementById('selected-mood-id').value = curMoodId;
+                        const moodBtn = document.querySelector(`.mood-btn[data-id="${curMoodId}"]`);
+                        if (moodBtn) {
+                            moodBtn.classList.add('selected');
+                            const moodObj = moods.find(m => m.moodId == curMoodId) || memory.mood;
+                            if (moodObj && selectedMoodName) {
+                                selectedMoodName.textContent = `SELECTED: ${(moodObj.name || '').toUpperCase()} ${moodObj.emoji || ''}`;
+                            }
+                        }
                     }
 
                     if (memory.tags) {

@@ -2,21 +2,27 @@
    Digital Memory Map - Unified API Client & Offline/GitHub Pages Demo Mock
    ========================================================================== */
 
-const DEMO_STORAGE_KEY = 'dmm_demo_memories';
+const DEMO_STORAGE_KEY = 'dmm_demo_memories_v2';
 const DEMO_CATEGORIES = [
-    { categoryId: 1, name: 'Travel & Expeditions' },
-    { categoryId: 2, name: 'Film Archives' },
-    { categoryId: 3, name: 'Gatherings' },
-    { categoryId: 4, name: 'Architecture' },
-    { categoryId: 5, name: 'Nature & Solitude' }
+    { categoryId: 1, name: 'Travel' },
+    { categoryId: 2, name: 'University' },
+    { categoryId: 3, name: 'Family' },
+    { categoryId: 4, name: 'Friends' },
+    { categoryId: 5, name: 'Food' },
+    { categoryId: 6, name: 'Events' },
+    { categoryId: 7, name: 'Childhood' },
+    { categoryId: 8, name: 'Nature' },
+    { categoryId: 9, name: 'Other' }
 ];
 
 const DEMO_MOODS = [
-    { moodId: 1, name: 'Nostalgic', emoji: '📜' },
-    { moodId: 2, name: 'Euphoric', emoji: '✨' },
-    { moodId: 3, name: 'Serene', emoji: '🌿' },
-    { moodId: 4, name: 'Adventurous', emoji: '🧭' },
-    { moodId: 5, name: 'Melancholic', emoji: '🌧️' }
+    { moodId: 1, name: 'Happy', emoji: '😊' },
+    { moodId: 2, name: 'Loved', emoji: '❤️' },
+    { moodId: 3, name: 'Funny', emoji: '😂' },
+    { moodId: 4, name: 'Sad', emoji: '😢' },
+    { moodId: 5, name: 'Excited', emoji: '😍' },
+    { moodId: 6, name: 'Peaceful', emoji: '😌' },
+    { moodId: 7, name: 'Normal', emoji: '😐' }
 ];
 
 const DEMO_TAGS = [
@@ -37,11 +43,11 @@ function getInitialDemoMemories() {
             latitude: 23.8103,
             longitude: 90.4125,
             locationName: "Dhanmondi, Dhaka",
-            categoryId: 3,
-            categoryName: "Gatherings",
-            moodId: 1,
-            moodName: "Nostalgic",
-            moodEmoji: "📜",
+            categoryId: 4,
+            categoryName: "Friends",
+            moodId: 5,
+            moodName: "Excited",
+            moodEmoji: "😍",
             tags: ["35mm", "Friends", "Night"],
             photos: [
                 { photoId: 1, photoUrl: "images/house_party.jpg", isCover: true, caption: "Living room record session" }
@@ -58,10 +64,10 @@ function getInitialDemoMemories() {
             longitude: 92.0058,
             locationName: "Cox's Bazar Sea Beach",
             categoryId: 1,
-            categoryName: "Travel & Expeditions",
-            moodId: 3,
-            moodName: "Serene",
-            moodEmoji: "🌿",
+            categoryName: "Travel",
+            moodId: 6,
+            moodName: "Peaceful",
+            moodEmoji: "😌",
             tags: ["Coast", "Summer", "Morning"],
             photos: [
                 { photoId: 2, photoUrl: "images/beach.jpg", isCover: true, caption: "Tide coming in" }
@@ -77,11 +83,11 @@ function getInitialDemoMemories() {
             latitude: 28.5355,
             longitude: 83.8780,
             locationName: "Mountain Passway",
-            categoryId: 5,
-            categoryName: "Nature & Solitude",
-            moodId: 4,
-            moodName: "Adventurous",
-            moodEmoji: "🧭",
+            categoryId: 8,
+            categoryName: "Nature",
+            moodId: 1,
+            moodName: "Happy",
+            moodEmoji: "😊",
             tags: ["Roadtrip", "Mountains"],
             photos: [
                 { photoId: 3, photoUrl: "images/roadtrip.jpg", isCover: true, caption: "High mountain road" }
