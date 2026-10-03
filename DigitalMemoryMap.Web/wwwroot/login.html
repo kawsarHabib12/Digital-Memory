@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 1.5rem; background: var(--bg-base);">
+    <div style="width: 100%; max-width: 440px;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <a href="/index.html" class="nav-brand" style="justify-content: center; font-size: 1.6rem; margin-bottom: 0.5rem;">
+                <span class="brand-icon">DM</span>
+                <div>
+                    <div>DIGITAL MEMORY MAP</div>
+                    <span class="brand-sub">AUTHENTICATED ARCHIVE</span>
+                </div>
+            </a>
+            <p class="mono-text" style="color: var(--text-muted); font-size: 0.82rem; margin-top: 0.4rem;">
+                VERIFIED ARCHIVIST SIGN IN // VOL. 2026
+            </p>
+        </div>
+
+        <div class="card" style="box-shadow: var(--shadow-md);">
+            <div id="login-alert" style="display: none; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; font-family:'Space Mono',monospace; background: #fee2e2; border: 1.5px solid var(--danger); color: var(--danger);"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">REGISTERED EMAIL</label>
+                    <input type="email" id="email" class="form-control" placeholder="archivist@example.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">ACCESS PASSWORD</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 0.85rem;">
+                    ACCESS ARCHIVE &rarr;
+                </button>
+            </form>
+
+            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.88rem; color: var(--text-secondary); border-top: 1px solid var(--border-dark); padding-top: 1rem;">
+                New archivist? <a href="/register.html" style="font-weight: 700; text-decoration: underline;">Open new archive</a>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; text-align: center; font-size: 0.75rem; color: var(--text-muted);" class="mono-text">
+            DEFAULT ADMIN: <code>admin@digitalmemory.com</code> / <code>Admin@123</code>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Auth.isLoggedIn()) {
+                window.location.href = '/dashboard.html';
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('expired')) {
+                showAlert('Your session has expired. Please sign in again.');
+            }
+
+            const form = document.getElementById('login-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideAlert();
+
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const submitBtn = document.getElementById('login-submit-btn');
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'AUTHENTICATING...';
+
+                try {
+                    const data = await API.post('/api/auth/login', { email, password });
+                    Auth.setUser(data);
+                    Toast.success(`Welcome back, ${data.fullName}!`);
+
+                    const returnUrl = urlParams.get('returnUrl') || '/dashboard.html';
+                    setTimeout(() => {
+                        window.location.href = returnUrl;
+                    }, 400);
+                } catch (err) {
+                    showAlert(err.message || 'Invalid email or password.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'ACCESS ARCHIVE \u2192';
+                }
+            });
+
+            function showAlert(msg) {
+                const alert = document.getElementById('login-alert');
+                alert.textContent = msg;
+                alert.style.display = 'block';
+            }
+
+            function hideAlert() {
+                const alert = document.getElementById('login-alert');
+                alert.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

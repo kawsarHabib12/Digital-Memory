@@ -1,0 +1,20 @@
+## Build and output
+bin/
+obj/
+out/
+
+## Visual Studio & JetBrains
+.vs/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+## Photos Uploads (Server local storage)
+uploads/*
+!uploads/.gitkeep
+
+## OS files
+.DS_Store
+Thumbs.db

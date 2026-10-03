@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive Catalogue &amp; Search — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="padding-top: 2.5rem; padding-bottom: 6rem;">
+        <!-- Editorial Masthead -->
+        <div class="card" style="margin-bottom: 2.5rem; padding: 2rem 2.5rem;">
+            <div class="mono-text" style="font-size: 0.78rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem;">
+                [ MEMORIES // SEARCH &amp; FILTER ]
+            </div>
+            <h1 style="font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 0.4rem;">
+                SEARCH MEMORIES
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 1rem; max-width: 650px; line-height: 1.5;">
+                Retrieve your saved memories by combining keywords, geographic coordinates, companion tags, moods, and date ranges.
+            </p>
+        </div>
+
+        <!-- Archival Search & Filter Docket -->
+        <div class="card" style="margin-bottom: 2.5rem; background: var(--bg-surface-alt);">
+            <div class="card-header-bar">
+                <div>
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">FILTERS</div>
+                    <h3 style="font-size: 1.25rem;">FILTER MEMORIES</h3>
+                </div>
+                <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">PARAMETRIC QUERY</span>
+            </div>
+
+            <form id="search-filter-form">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-keyword">KEYWORD / TITLE</label>
+                        <input type="text" id="search-keyword" class="form-control" placeholder="Search title or story...">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-location">LOCATION / CITY</label>
+                        <input type="text" id="search-location" class="form-control" placeholder="e.g. Cox's Bazar, Paris...">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-tag">TAG / PEOPLE</label>
+                        <input type="text" id="search-tag" class="form-control" placeholder="e.g. friends, beach, Sam...">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-category">CATEGORY</label>
+                        <select id="search-category" class="form-control">
+                            <option value="">ALL CATEGORIES</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-mood">MOOD</label>
+                        <select id="search-mood" class="form-control">
+                            <option value="">ALL MOODS</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-from">FROM DATE</label>
+                        <input type="date" id="search-from" class="form-control mono-text">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="search-to">TO DATE</label>
+                        <input type="date" id="search-to" class="form-control mono-text">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.85rem; justify-content: flex-end; border-top: 1px solid var(--border-dark); padding-top: 1.25rem;">
+                    <button type="button" id="search-reset-btn" class="btn btn-secondary">RESET FILTERS</button>
+                    <button type="submit" class="btn btn-primary">SEARCH MEMORIES &rarr;</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Search Results Count Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; border-bottom: var(--border-thick); padding-bottom: 0.65rem;">
+            <div>
+                <span class="mono-text" style="font-size: 0.75rem; color: var(--text-muted);">CATALOGUE RESULTS</span>
+                <h3 style="font-size: 1.35rem;" id="results-count-title">MATCHING ENTRIES</h3>
+            </div>
+            <span id="results-count-badge" class="badge badge-primary">0 FOUND</span>
+        </div>
+
+        <!-- Results Grid -->
+        <div id="results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.75rem;">
+            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 4rem 0;" class="mono-text">
+                QUERYING ARCHIVE REPOSITORY...
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="search-empty" style="display: none; text-align: center; padding: 5rem 1.5rem;" class="card">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔎</div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem;">NO MEMORIES MATCH QUERY</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Adjust search filters or clear parameters to broaden catalogue results.</p>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="pagination-controls" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 3rem;"></div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('search');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialTag = urlParams.get('tag');
+            if (initialTag) {
+                document.getElementById('search-tag').value = initialTag;
+            }
+
+            let currentPage = 1;
+            const pageSize = 12;
+
+            // Load Categories and Moods
+            try {
+                const [categories, moods] = await Promise.all([
+                    API.get('/api/categories'),
+                    API.get('/api/moods')
+                ]);
+
+                const catSelect = document.getElementById('search-category');
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.categoryId;
+                    opt.textContent = c.name.toUpperCase();
+                    catSelect.appendChild(opt);
+                });
+
+                const moodSelect = document.getElementById('search-mood');
+                moods.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.moodId;
+                    opt.textContent = `${m.emoji} ${m.name.toUpperCase()}`;
+                    moodSelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Failed to load categories/moods:', e);
+            }
+
+            async function performSearch(page = 1) {
+                currentPage = page;
+                const keyword = document.getElementById('search-keyword').value.trim();
+                const location = document.getElementById('search-location').value.trim();
+                const tag = document.getElementById('search-tag').value.trim();
+                const categoryId = document.getElementById('search-category').value;
+                const moodId = document.getElementById('search-mood').value;
+                const from = document.getElementById('search-from').value;
+                const to = document.getElementById('search-to').value;
+
+                const grid = document.getElementById('results-grid');
+                const emptyNotice = document.getElementById('search-empty');
+                const pagination = document.getElementById('pagination-controls');
+
+                grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 4rem 0;" class="mono-text">SEARCHING ARCHIVE...</div>';
+                emptyNotice.style.display = 'none';
+
+                try {
+                    const data = await API.get('/api/memories/search', {
+                        keyword: keyword || undefined,
+                        location: location || undefined,
+                        tag: tag || undefined,
+                        categoryId: categoryId || undefined,
+                        moodId: moodId || undefined,
+                        from: from || undefined,
+                        to: to || undefined,
+                        page: currentPage,
+                        pageSize
+                    });
+
+                    document.getElementById('results-count-badge').textContent = `${data.totalItems} FOUND`;
+
+                    if (data.items.length === 0) {
+                        grid.innerHTML = '';
+                        emptyNotice.style.display = 'block';
+                        pagination.innerHTML = '';
+                        return;
+                    }
+
+                    grid.innerHTML = data.items.map(m => {
+                        const dateFormatted = new Date(m.memoryDate).toLocaleDateString('en-GB', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                        }).replace(/\//g, '.');
+
+                        return `
+                            <article class="memory-print-card">
+                                <div class="memory-print-image-wrap">
+                                    ${m.coverPhotoUrl 
+                                        ? `<img src="${m.coverPhotoUrl}" class="memory-print-image" alt="${escapeHtml(m.title)}" onerror="this.style.display='none'">` 
+                                        : `<div style="height: 180px; background: #0a0a0c; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 3rem;">${m.moodEmoji || '📌'}</div>`
+                                    }
+                                </div>
+                                <div class="memory-print-body">
+                                    <div class="memory-print-header">
+                                        <span class="badge badge-neutral">${escapeHtml(m.category)}</span>
+                                        <span class="memory-print-date">${dateFormatted}</span>
+                                    </div>
+                                    <h4 class="memory-print-title">
+                                        <a href="/memory-details.html?id=${m.memoryId}" style="color: #0a0a0c;">${escapeHtml(m.title)}</a>
+                                    </h4>
+                                    <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+                                        ${escapeHtml(m.snippet || 'No excerpt available.')}
+                                    </p>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-color); padding-top: 0.75rem; font-size: 0.8rem; margin-top: auto;">
+                                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-family:'Space Grotesk',sans-serif;">
+                                            📍 ${escapeHtml(m.locationName || 'Pinned place')}
+                                        </span>
+                                        <a href="/memory-details.html?id=${m.memoryId}" class="mono-text" style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase;">
+                                            DOSSIER &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        `;
+                    }).join('');
+
+                    // Render pagination buttons
+                    renderPagination(data.page, data.totalPages);
+                } catch (err) {
+                    Toast.error('Search failed.');
+                }
+            }
+
+            function renderPagination(current, total) {
+                const container = document.getElementById('pagination-controls');
+                if (total <= 1) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+                if (current > 1) {
+                    html += `<button class="btn btn-secondary btn-sm" onclick="performSearch(${current - 1})">&larr; PREV</button>`;
+                }
+
+                for (let i = 1; i <= total; i++) {
+                    if (i === current) {
+                        html += `<button class="btn btn-primary btn-sm" disabled>${i}</button>`;
+                    } else if (i === 1 || i === total || (i >= current - 1 && i <= current + 1)) {
+                        html += `<button class="btn btn-secondary btn-sm" onclick="performSearch(${i})">${i}</button>`;
+                    } else if (i === current - 2 || i === current + 2) {
+                        html += `<span style="padding: 0.4rem; color: var(--text-muted);" class="mono-text">...</span>`;
+                    }
+                }
+
+                if (current < total) {
+                    html += `<button class="btn btn-secondary btn-sm" onclick="performSearch(${current + 1})">NEXT &rarr;</button>`;
+                }
+
+                container.innerHTML = html;
+            }
+
+            window.performSearch = performSearch;
+
+            document.getElementById('search-filter-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                performSearch(1);
+            });
+
+            document.getElementById('search-reset-btn').addEventListener('click', () => {
+                document.getElementById('search-filter-form').reset();
+                performSearch(1);
+            });
+
+            performSearch(1);
+        });
+    </script>
+</body>
+</html>

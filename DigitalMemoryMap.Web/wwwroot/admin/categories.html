@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Management — Digital Memory Map Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="max-width: 900px; padding-top: 2rem; padding-bottom: 5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <a href="/admin/dashboard.html" style="font-size: 0.9rem; color: var(--text-secondary);">&larr; Back to Admin Dashboard</a>
+                <h1 style="font-size: 2rem; margin-top: 0.25rem;">🏷️ Category Management</h1>
+                <p style="color: var(--text-secondary);">Add, rename, or deactivate categories used across memories.</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
+            <!-- Category List Table -->
+            <div class="card">
+                <h3 style="font-size: 1.15rem; margin-bottom: 1rem;">Existing Categories</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categories-tbody">
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">Loading categories...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Create New Category Card -->
+            <div class="card">
+                <h3 style="font-size: 1.15rem; margin-bottom: 1rem;">Add New Category</h3>
+                <form id="new-category-form">
+                    <div class="form-group">
+                        <label class="form-label" for="category-name-input">Category Name *</label>
+                        <input type="text" id="category-name-input" class="form-control" placeholder="e.g. Hiking, College..." required minlength="2" maxlength="50">
+                    </div>
+                    <button type="submit" id="add-category-btn" class="btn btn-primary" style="width: 100%;">
+                        + Create Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAdmin()) return;
+            Auth.renderNavbar('admin-categories');
+
+            const tbody = document.getElementById('categories-tbody');
+
+            async function loadCategories() {
+                try {
+                    const categories = await API.get('/api/admin/categories');
+
+                    if (categories.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:2rem 0;">No categories found.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = categories.map(c => `
+                        <tr>
+                            <td style="font-weight: 600; color: #fff;">
+                                <span id="cat-name-${c.categoryId}">${escapeHtml(c.name)}</span>
+                            </td>
+                            <td>
+                                <span class="badge ${c.isActive ? 'badge-success' : 'badge-neutral'}">
+                                    ${c.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button class="btn btn-secondary btn-sm" onclick="renameCategory(${c.categoryId}, '${escapeHtml(c.name)}', ${c.isActive})" style="margin-right:0.3rem;">Rename</button>
+                                <button class="btn ${c.isActive ? 'btn-danger' : 'btn-primary'} btn-sm" onclick="toggleCategoryActive(${c.categoryId}, '${escapeHtml(c.name)}', ${!c.isActive})">
+                                    ${c.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } catch (err) {
+                    Toast.error('Failed to load categories.');
+                }
+            }
+
+            // Create new category
+            document.getElementById('new-category-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('category-name-input').value.trim();
+                const btn = document.getElementById('add-category-btn');
+
+                btn.disabled = true;
+                btn.textContent = 'Creating...';
+
+                try {
+                    await API.post('/api/admin/categories', { name });
+                    Toast.success(`Category "${name}" created.`);
+                    document.getElementById('category-name-input').value = '';
+                    loadCategories();
+                } catch (err) {
+                    Toast.error(err.message || 'Failed to create category.');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '+ Create Category';
+                }
+            });
+
+            // Rename category
+            window.renameCategory = async function(id, currentName, isActive) {
+                const newName = prompt('Enter new category name:', currentName);
+                if (!newName || newName.trim() === '' || newName.trim() === currentName) return;
+
+                try {
+                    await API.put(`/api/admin/categories/${id}`, { name: newName.trim(), isActive });
+                    Toast.success('Category renamed.');
+                    loadCategories();
+                } catch (err) {
+                    Toast.error(err.message || 'Failed to rename category.');
+                }
+            };
+
+            // Toggle category active/inactive
+            window.toggleCategoryActive = async function(id, name, newActive) {
+                const action = newActive ? 'activate' : 'deactivate';
+                if (!confirm(`Are you sure you want to ${action} the "${name}" category?`)) return;
+
+                try {
+                    await API.put(`/api/admin/categories/${id}`, { name, isActive: newActive });
+                    Toast.success(`Category ${action}d.`);
+                    loadCategories();
+                } catch (err) {
+                    Toast.error(err.message || 'Failed to update category status.');
+                }
+            };
+
+            loadCategories();
+        });
+    </script>
+</body>
+</html>

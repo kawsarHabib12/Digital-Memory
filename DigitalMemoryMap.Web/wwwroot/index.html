@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Digital Memory Map - A personal editorial archive pinning life moments, film photography, and moods to an interactive world map.">
+    <title>Digital Memory Map — Personal Editorial Archive</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main>
+        <!-- Editorial Masthead Section -->
+        <section class="container" style="padding-top: 3.5rem; padding-bottom: 2rem;">
+            <div class="editorial-masthead">
+                <div class="masthead-top">
+                    <span>ARCHIVE REF: 2026-CAT // ED. 01</span>
+                    <span>PERSONAL GEOGRAPHY &amp; RETROSPECTIVE JOURNAL</span>
+                    <span>COORDINATES &amp; FILM PRINTS</span>
+                </div>
+                <div class="masthead-content">
+                    <div>
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.85rem;">
+                            [ ANNOTATED ATLAS &amp; VISUAL DOSSIER ]
+                        </div>
+                        <h1 class="masthead-title">
+                            DIGITAL<br>
+                            MEMORY MAP
+                        </h1>
+                        <p class="masthead-desc">
+                            A minimal, editorial archive designed to collect life's personal moments. Pin candid photographs, stories, companions, and emotional states to an interactive global map.
+                        </p>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <a href="/register.html" class="btn btn-primary btn-lg" id="hero-get-started-btn">GET STARTED</a>
+                            <a href="/map.html" class="btn btn-secondary btn-lg" id="hero-login-btn">EXPLORE MAP</a>
+                        </div>
+                    </div>
+                    <div style="border: var(--border-thick); background: var(--bg-surface-alt); padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+                        <div style="border-bottom: 1px solid var(--border-dark); padding-bottom: 0.75rem;">
+                            <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted);">CATALOGUE STATUS</div>
+                            <div style="font-weight: 700; font-size: 1.1rem; text-transform: uppercase;">ONLINE &amp; ACTIVE</div>
+                        </div>
+                        <div style="border-bottom: 1px solid var(--border-dark); padding-bottom: 0.75rem;">
+                            <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted);">ARCHIVAL MEDIUM</div>
+                            <div style="font-weight: 700; font-size: 1.1rem; text-transform: uppercase;">CARTOGRAPHY + 35MM FILM</div>
+                        </div>
+                        <div>
+                            <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted);">SECURITY LEVEL</div>
+                            <div style="font-weight: 700; font-size: 1.1rem; text-transform: uppercase;">AUTHENTICATED &amp; PRIVATE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Editorial Memory Gallery / Collage Grid (Direct Reference Match) -->
+        <section class="container" style="padding-top: 1rem; padding-bottom: 4rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: var(--border-thick); padding-bottom: 0.85rem; margin-bottom: 2rem;">
+                <div>
+                    <div class="mono-text" style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">EXHIBITION // CURATED PRINTS</div>
+                    <h2 style="font-size: clamp(1.8rem, 4vw, 2.6rem); margin-top: 0.25rem;">THE MEMORY COLLECTION</h2>
+                </div>
+                <div class="mono-text" style="font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">
+                    COLLECTION NO. 04 / 2026
+                </div>
+            </div>
+
+            <!-- Asymmetrical Collage: 1 Dominant Hero + 2 Offset Companion Cards -->
+            <div class="editorial-grid">
+                <!-- Dominant Hero Card (Sam's House Party reference) -->
+                <div class="grid-col-7">
+                    <article class="memory-print-card" style="height: 100%;">
+                        <div class="memory-print-image-wrap" style="aspect-ratio: 16 / 10;">
+                            <img src="/images/house_party.jpg" alt="Sam's House Party Archive" class="memory-print-image">
+                            <span class="badge badge-primary" style="position: absolute; top: 12px; left: 12px;">PRINT #01 // COVER</span>
+                            <span class="mono-text" style="position: absolute; bottom: 12px; right: 12px; background:#000; color:#fff; padding:3px 8px; font-size:0.75rem;">35MM ANALOG</span>
+                        </div>
+                        <div class="memory-print-body">
+                            <div class="memory-print-header">
+                                <span class="badge badge-neutral">GATHERINGS</span>
+                                <span class="memory-print-date">24.06.2020</span>
+                            </div>
+                            <h3 class="memory-print-title">SAM'S HOUSE PARTY</h3>
+                            <div class="memory-print-location">
+                                📍 742 Evergreen Terrace, Springfield
+                            </div>
+                            <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                                Late night vinyl records, laughter echoing from the worn sofa, and the warmth of reconnecting after years apart. One of those evenings that remained timeless.
+                            </p>
+                            <div class="memory-print-people">
+                                👥 COMPANIONS: George, Sam, Frank, Elena &bull; MOOD: 🥳 Euphoric &amp; Nostalgic
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- 2 Offset Stacked Cards -->
+                <div class="grid-col-5" style="display: flex; flex-direction: column; gap: 1.75rem;">
+                    <!-- Card 2: Coastal Walk -->
+                    <article class="memory-print-card">
+                        <div class="memory-print-image-wrap" style="aspect-ratio: 16 / 9;">
+                            <img src="/images/beach.jpg" alt="Coastal Escape" class="memory-print-image">
+                            <span class="badge badge-primary" style="position: absolute; top: 10px; left: 10px;">PRINT #02</span>
+                        </div>
+                        <div class="memory-print-body">
+                            <div class="memory-print-header">
+                                <span class="badge badge-neutral">COASTAL</span>
+                                <span class="memory-print-date">18.09.2024</span>
+                            </div>
+                            <h3 class="memory-print-title" style="font-size: 1.15rem;">COASTAL MIST EXPEDITION</h3>
+                            <div class="memory-print-location">
+                                📍 Laboni Beach, Bay of Bengal
+                            </div>
+                            <div class="memory-print-people">
+                                👥 COMPANIONS: Sarah, Liam &bull; MOOD: 🌊 Serene &bull; 🏷️ #beach #mist
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 3: Mountain Alps -->
+                    <article class="memory-print-card">
+                        <div class="memory-print-image-wrap" style="aspect-ratio: 16 / 9;">
+                            <img src="/images/roadtrip.jpg" alt="Alpine Mountain Road" class="memory-print-image">
+                            <span class="badge badge-primary" style="position: absolute; top: 10px; left: 10px;">PRINT #03</span>
+                        </div>
+                        <div class="memory-print-body">
+                            <div class="memory-print-header">
+                                <span class="badge badge-neutral">EXPEDITION</span>
+                                <span class="memory-print-date">03.05.2025</span>
+                            </div>
+                            <h3 class="memory-print-title" style="font-size: 1.15rem;">ALPINE ROAD TRIP &amp; PASS</h3>
+                            <div class="memory-print-location">
+                                📍 Passo dello Stelvio, Alps
+                            </div>
+                            <div class="memory-print-people">
+                                👥 COMPANIONS: Solo Journey &bull; MOOD: ⚡ Adventurous
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Map Preview Showcase -->
+        <section class="container" style="padding-bottom: 5rem;">
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div class="masthead-top">
+                    <span>CARTOGRAPHIC ARCHIVE ATLAS</span>
+                    <span id="demo-coordinates" class="coordinate-text">LAT: 21.4272° N &bull; LON: 91.9788° E</span>
+                    <span>CLICK ANY MARKER FOR PREVIEW</span>
+                </div>
+                <div style="position: relative;">
+                    <div id="demo-map" style="height: 480px; width: 100%;"></div>
+                    <div style="position: absolute; bottom: 1.5rem; left: 1.5rem; z-index: 500;" class="glass-card">
+                        <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">
+                            ARCHIVED PIN PREVIEW
+                        </div>
+                        <h3 style="font-size: 1.15rem; margin: 0.25rem 0;">Sunset at Laboni Beach</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.6rem;">
+                            Travel &bull; 14.03.2026 &bull; 😊 Happy
+                        </p>
+                        <a href="/login.html" class="btn btn-primary btn-sm">EXPLORE FULL MAP &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Archival Manifesto / Feature Pillars -->
+        <section class="container" style="padding-bottom: 6rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.75rem;">
+                <div class="card">
+                    <div class="mono-text" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        [ MANIFEST // 01 ]
+                    </div>
+                    <h3 style="font-size: 1.35rem; margin-bottom: 0.75rem;">PRECISION CARTOGRAPHY</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.65;">
+                        Pin moments precisely to geographical coordinates with reverse geocoding, interactive location previews, and category-filtered layers.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="mono-text" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        [ MANIFEST // 02 ]
+                    </div>
+                    <h3 style="font-size: 1.35rem; margin-bottom: 0.75rem;">CHRONOLOGICAL STREAM</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.65;">
+                        Navigate your past through an editorial timeline formatted by year and date stamps. Relive stories in exact chronological continuity.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="mono-text" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        [ MANIFEST // 03 ]
+                    </div>
+                    <h3 style="font-size: 1.35rem; margin-bottom: 0.75rem;">SOVEREIGN &amp; PRIVATE</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.65;">
+                        Rigorous identity security, HttpOnly authenticated cookies, protected photo streaming, and toggleable public or private memory classification.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer style="border-top: var(--border-thick); background: #0a0a0c; color: #ffffff; padding: 3rem 1.5rem;">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <div style="font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em;">
+                    DIGITAL MEMORY MAP
+                </div>
+                <div class="mono-text" style="font-size: 0.78rem; color: #a1a1aa; margin-top: 0.25rem;">
+                    PERSONAL ARCHIVE EDITION &bull; UNIVERSITY CSE PROJECT
+                </div>
+            </div>
+            <div class="mono-text" style="font-size: 0.8rem; color: #a1a1aa;">
+                &copy; 2026 DIGITAL MEMORY MAP &bull; POWERED BY OPENSTREETMAP &amp; LEAFLET
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Auth.renderNavbar('home');
+
+            // Interactive demo map
+            const demoMap = MapHelper.initMap('demo-map', {
+                center: [21.4272, 91.9788],
+                zoom: 12
+            });
+
+            const demoPin = [{
+                memoryId: 1,
+                title: "Sunset at Laboni Beach",
+                memoryDate: "2026-03-14",
+                latitude: 21.4272,
+                longitude: 91.9788,
+                locationName: "Laboni Beach, Cox's Bazar",
+                category: "Travel",
+                moodEmoji: "😊"
+            }];
+
+            MapHelper.renderMemoryMarkers(demoMap, demoPin);
+        });
+    </script>
+</body>
+</html>

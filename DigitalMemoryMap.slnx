@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DigitalMemoryMap.BLL/DigitalMemoryMap.BLL.csproj" />
+  <Project Path="DigitalMemoryMap.DAL/DigitalMemoryMap.DAL.csproj" />
+  <Project Path="DigitalMemoryMap.Tests/DigitalMemoryMap.Tests.csproj" />
+  <Project Path="DigitalMemoryMap.Web/DigitalMemoryMap.Web.csproj" />
+</Solution>

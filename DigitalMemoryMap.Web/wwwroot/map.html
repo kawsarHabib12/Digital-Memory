@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Cartographic Atlas — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--bg-base);
+        }
+        #full-map {
+            width: 100%;
+            height: calc(100vh - 100px);
+            z-index: 10;
+        }
+        .map-floating-panel {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            z-index: 1000;
+            width: 380px;
+            max-width: calc(100vw - 48px);
+            background: #ffffff;
+            border: var(--border-thick);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+        }
+        .search-result-item:hover {
+            background: #0a0a0c !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div style="position: relative; width: 100%; height: calc(100vh - 100px);">
+        <!-- Floating Filter & Search Archive Dossier Panel -->
+        <div class="map-floating-panel">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: var(--border-thick); padding-bottom: 0.65rem; margin-bottom: 1rem;">
+                <div>
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">ATLAS DOSSIER</div>
+                    <h3 style="font-size: 1.15rem; margin-top: 0.15rem;">PINNED ATLAS</h3>
+                </div>
+                <span id="pin-count-badge" class="badge badge-primary">0 PINS</span>
+            </div>
+
+            <!-- Place Search (Nominatim) -->
+            <div class="form-group" style="margin-bottom: 0.85rem; position: relative;">
+                <label class="form-label" for="place-search-input">SEARCH GEOGRAPHY</label>
+                <input type="text" id="place-search-input" class="form-control" placeholder="Search city, landmark, or region..." autocomplete="off">
+                <div id="place-search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: var(--border-thick); margin-top: 2px; max-height: 190px; overflow-y: auto; z-index: 2000; box-shadow: var(--shadow-md);"></div>
+            </div>
+
+            <!-- Filters: Category & Mood -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;">
+                <div>
+                    <label class="form-label" for="map-filter-category">CATEGORY</label>
+                    <select id="map-filter-category" class="form-control" style="font-size: 0.82rem; padding: 0.45rem;">
+                        <option value="">ALL CATEGORIES</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="map-filter-mood">MOOD</label>
+                    <select id="map-filter-mood" class="form-control" style="font-size: 0.82rem; padding: 0.45rem;">
+                        <option value="">ALL MOODS</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Date Range Filters -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label class="form-label" for="map-filter-from">FROM DATE</label>
+                    <input type="date" id="map-filter-from" class="form-control" style="font-size: 0.78rem; padding: 0.4rem;">
+                </div>
+                <div>
+                    <label class="form-label" for="map-filter-to">TO DATE</label>
+                    <input type="date" id="map-filter-to" class="form-control" style="font-size: 0.78rem; padding: 0.4rem;">
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div style="display: flex; gap: 0.5rem;">
+                <button id="apply-filters-btn" class="btn btn-primary btn-sm" style="flex: 1;">FILTER ATLAS</button>
+                <button id="reset-filters-btn" class="btn btn-secondary btn-sm">RESET</button>
+                <button id="locate-me-btn" class="btn btn-secondary btn-sm" title="Find memories near my current location">NEARBY</button>
+            </div>
+        </div>
+
+        <!-- Full-Screen Map Container -->
+        <div id="full-map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('map');
+
+            const map = MapHelper.initMap('full-map', { zoom: 8 });
+            let markerLayer = null;
+
+            // Load Categories and Moods into filters
+            try {
+                const [categories, moods] = await Promise.all([
+                    API.get('/api/categories'),
+                    API.get('/api/moods')
+                ]);
+
+                const catSelect = document.getElementById('map-filter-category');
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.categoryId;
+                    opt.textContent = c.name.toUpperCase();
+                    catSelect.appendChild(opt);
+                });
+
+                const moodSelect = document.getElementById('map-filter-mood');
+                moods.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.moodId;
+                    opt.textContent = `${m.emoji} ${m.name.toUpperCase()}`;
+                    moodSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Error fetching filter options:', err);
+            }
+
+            // Fetch and display pins
+            async function fetchPins() {
+                const categoryId = document.getElementById('map-filter-category').value;
+                const moodId = document.getElementById('map-filter-mood').value;
+                const from = document.getElementById('map-filter-from').value;
+                const to = document.getElementById('map-filter-to').value;
+
+                try {
+                    const pins = await API.get('/api/memories/map', { categoryId, moodId, from, to });
+                    markerLayer = MapHelper.renderMemoryMarkers(map, pins, markerLayer);
+                    document.getElementById('pin-count-badge').textContent = `${pins.length} PIN${pins.length === 1 ? '' : 'S'}`;
+                } catch (err) {
+                    Toast.error('Failed to load memory pins.');
+                }
+            }
+
+            document.getElementById('apply-filters-btn').addEventListener('click', fetchPins);
+            document.getElementById('reset-filters-btn').addEventListener('click', () => {
+                document.getElementById('map-filter-category').value = '';
+                document.getElementById('map-filter-mood').value = '';
+                document.getElementById('map-filter-from').value = '';
+                document.getElementById('map-filter-to').value = '';
+                fetchPins();
+            });
+
+            // Geolocation / Nearby search
+            document.getElementById('locate-me-btn').addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    Toast.error('Geolocation is not supported by your browser.');
+                    return;
+                }
+
+                Toast.info('Locating your position...');
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    map.setView([lat, lng], 13);
+
+                    try {
+                        const nearby = await API.get('/api/memories/nearby', { lat, lng, radiusKm: 15 });
+                        Toast.success(`Found ${nearby.length} memory(ies) within 15 km.`);
+                        fetchPins();
+                    } catch (e) {
+                        Toast.error('Could not fetch nearby memories.');
+                    }
+                }, () => {
+                    Toast.error('Unable to retrieve your location.');
+                });
+            });
+
+            // Debounced place search
+            const searchInput = document.getElementById('place-search-input');
+            const searchResults = document.getElementById('place-search-results');
+            let debounceTimer = null;
+
+            searchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const query = searchInput.value.trim();
+                if (query.length < 3) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+
+                debounceTimer = setTimeout(async () => {
+                    const places = await MapHelper.searchLocation(query);
+                    if (places.length === 0) {
+                        searchResults.innerHTML = '<div style="padding:0.6rem; color:var(--text-muted); font-size:0.8rem; font-family:\'Space Mono\',monospace;">NO LOCATIONS FOUND.</div>';
+                        searchResults.style.display = 'block';
+                        return;
+                    }
+
+                    searchResults.innerHTML = places.map(p => `
+                        <div class="search-result-item" style="padding:0.65rem 0.85rem; border-bottom:1px solid #0a0a0c; cursor:pointer; font-size:0.85rem; transition:var(--transition);" data-lat="${p.lat}" data-lon="${p.lon}">
+                            📍 ${escapeHtml(p.display_name)}
+                        </div>
+                    `).join('');
+
+                    searchResults.style.display = 'block';
+
+                    searchResults.querySelectorAll('.search-result-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const lat = parseFloat(item.dataset.lat);
+                            const lon = parseFloat(item.dataset.lon);
+                            map.setView([lat, lon], 14);
+                            searchResults.style.display = 'none';
+                            searchInput.value = '';
+                        });
+                    });
+                }, 400);
+            });
+
+            // Initial pin load
+            fetchPins();
+        });
+    </script>
+</body>
+</html>

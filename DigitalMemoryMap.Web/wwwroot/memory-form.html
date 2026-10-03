@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive Dossier Entry — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="max-width: 960px; padding-top: 2.5rem; padding-bottom: 5rem;">
+        <!-- Top Editorial Masthead -->
+        <div class="card" style="margin-bottom: 2rem; padding: 2rem 2.5rem;">
+            <a href="/dashboard.html" class="mono-text" style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase;">
+                &larr; BACK TO DASHBOARD
+            </a>
+            <h1 style="font-size: clamp(2rem, 4.5vw, 3.2rem); margin-top: 0.5rem; margin-bottom: 0.4rem;" id="form-heading">
+                RECORD A NEW MEMORY
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 1rem; max-width: 680px; line-height: 1.5;">
+                Enter coordinates, attach 35mm film prints, tag companions, and chronicle your personal journey.
+            </p>
+        </div>
+
+        <form id="memory-form">
+            <!-- Step 1: Location Picking with Mini-Map -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-header-bar">
+                    <div>
+                        <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">STEP 01</div>
+                        <h3 style="font-size: 1.25rem;">GEOGRAPHIC LOCALITY &amp; COORDINATES</h3>
+                    </div>
+                    <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">PRECISION CARTOGRAPHY</span>
+                </div>
+                
+                <div style="margin-bottom: 1rem; position: relative;">
+                    <label class="form-label" for="map-search-box">SEARCH ADDRESS OR LANDMARK</label>
+                    <input type="text" id="map-search-box" class="form-control" placeholder="Search a city, landmark, or address (or click directly on the map)..." autocomplete="off">
+                    <div id="map-search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: var(--border-thick); margin-top: 2px; max-height: 190px; overflow-y: auto; z-index: 2000; box-shadow: var(--shadow-md);"></div>
+                </div>
+
+                <div id="picker-map" style="height: 340px; border: var(--border-thick); overflow: hidden; margin-bottom: 1.25rem;"></div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="form-label" for="location-name">LOCATION NAME</label>
+                        <input type="text" id="location-name" class="form-control" placeholder="e.g. Laboni Beach, Cox's Bazar">
+                    </div>
+                    <div>
+                        <label class="form-label" for="latitude">LATITUDE</label>
+                        <input type="number" step="any" id="latitude" class="form-control mono-text" required readonly style="background:var(--bg-surface-alt);">
+                    </div>
+                    <div>
+                        <label class="form-label" for="longitude">LONGITUDE</label>
+                        <input type="number" step="any" id="longitude" class="form-control mono-text" required readonly style="background:var(--bg-surface-alt);">
+                    </div>
+                </div>
+                <span id="coordinates-error" class="form-error">Please select location coordinates on the map.</span>
+            </div>
+
+            <!-- Step 2: Story Details -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-header-bar">
+                    <div>
+                        <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">STEP 02</div>
+                        <h3 style="font-size: 1.25rem;">MEMORY NARRATIVE &amp; CLASSIFICATION</h3>
+                    </div>
+                    <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">CHRONICLE DOSSIER</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="title">MEMORY TITLE *</label>
+                    <input type="text" id="title" class="form-control" placeholder="Give your memory an evocative title (e.g. SAM'S HOUSE PARTY)" required minlength="3" maxlength="100">
+                    <span id="title-error" class="form-error"></span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="memory-date">DATE OF MEMORY *</label>
+                        <input type="date" id="memory-date" class="form-control mono-text" required>
+                        <span id="memory-date-error" class="form-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="category-id">CATEGORY *</label>
+                        <select id="category-id" class="form-control" required>
+                            <option value="">SELECT A CATEGORY</option>
+                        </select>
+                        <span id="category-id-error" class="form-error"></span>
+                    </div>
+                </div>
+
+                <!-- Mood Selector -->
+                <div class="form-group">
+                    <label class="form-label">EMOTIONAL MOOD STAMP</label>
+                    <div id="mood-picker-container" class="mood-picker"></div>
+                    <input type="hidden" id="selected-mood-id">
+                </div>
+
+                <!-- Description / Story -->
+                <div class="form-group">
+                    <label class="form-label" for="description">
+                        <span>FIELD NOTES &amp; STORY</span>
+                        <span id="desc-char-count" class="mono-text" style="font-size:0.75rem; color:var(--text-muted);">0 / 2000</span>
+                    </label>
+                    <textarea id="description" class="form-control" placeholder="Write what happened, who you were with, why this place was special..." maxlength="2000"></textarea>
+                </div>
+
+                <!-- Tags & People Input -->
+                <div class="form-group">
+                    <label class="form-label">PEOPLE &amp; TAGS (TYPE COMPANION OR KEYWORD AND PRESS ENTER)</label>
+                    <div class="tags-wrapper" id="tags-wrapper">
+                        <input type="text" id="tag-input" class="tags-input" placeholder="e.g. with:Sam, George, beach, vinyl...">
+                    </div>
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.4rem;">
+                        Max 10 tags. Prefix companion names with 'with:' or plain names (e.g. Sam, Frank).
+                    </div>
+                </div>
+
+                <!-- Visibility -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="visibility">SECURITY CLASSIFICATION</label>
+                    <select id="visibility" class="form-control" style="width: auto;">
+                        <option value="0">🔒 PRIVATE DOSSIER (CONFIDENTIAL TO YOU)</option>
+                        <option value="1">🌐 PUBLIC REGISTRY (SHARED IN ARCHIVE)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Step 3: Photos -->
+            <div class="card" style="margin-bottom: 2.5rem;">
+                <div class="card-header-bar">
+                    <div>
+                        <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">STEP 03</div>
+                        <h3 style="font-size: 1.25rem;">PHOTOGRAPHIC EXHIBITION PRINTS (UP TO 5)</h3>
+                    </div>
+                    <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">FILM &amp; EVIDENCE</span>
+                </div>
+
+                <div id="existing-photos-section" style="display: none; margin-bottom: 1.5rem;">
+                    <div class="mono-text" style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.5rem;">CURRENT CATALOGUED PRINTS:</div>
+                    <div id="existing-photos-grid" class="photo-preview-grid"></div>
+                </div>
+
+                <div class="upload-dropzone" id="upload-dropzone">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📷</div>
+                    <p style="font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem; text-transform: uppercase;">
+                        CLICK OR DRAG &amp; DROP PRINTS HERE
+                    </p>
+                    <p class="mono-text" style="font-size: 0.78rem; color: var(--text-muted);">
+                        JPG, PNG, OR WEBP &bull; UP TO 5 MB PER PRINT &bull; MAX 5 PRINTS TOTAL
+                    </p>
+                    <input type="file" id="photo-file-input" multiple accept="image/jpeg,image/png,image/webp" style="display: none;">
+                </div>
+
+                <div id="new-photos-preview" class="photo-preview-grid"></div>
+                <span id="photos-error" class="form-error"></span>
+            </div>
+
+            <!-- Form Actions -->
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <a href="/dashboard.html" class="btn btn-secondary btn-lg">CANCEL</a>
+                <button type="submit" id="save-memory-btn" class="btn btn-primary btn-lg">
+                    SAVE MEMORY &rarr;
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('add-memory');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const editingId = urlParams.get('id');
+
+            // Set max date for memory-date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('memory-date').setAttribute('max', today);
+            document.getElementById('memory-date').value = today;
+
+            // Character counter for description
+            const descArea = document.getElementById('description');
+            descArea.addEventListener('input', () => {
+                document.getElementById('desc-char-count').textContent = `${descArea.value.length} / 2000`;
+            });
+
+            // Tags State
+            const tags = new Set();
+            const tagInput = document.getElementById('tag-input');
+            const tagsWrapper = document.getElementById('tags-wrapper');
+
+            function renderTags() {
+                tagsWrapper.querySelectorAll('.tag-chip').forEach(c => c.remove());
+
+                tags.forEach(t => {
+                    const chip = document.createElement('span');
+                    chip.className = 'tag-chip';
+                    chip.innerHTML = `${escapeHtml(t)} <button type="button" data-tag="${t}">&times;</button>`;
+                    tagsWrapper.insertBefore(chip, tagInput);
+                });
+            }
+
+            tagInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const val = tagInput.value.trim().toLowerCase().replace(/[^a-z0-9_:-]/g, '');
+                    if (val && val.length >= 2 && val.length <= 30 && tags.size < 10) {
+                        tags.add(val);
+                        tagInput.value = '';
+                        renderTags();
+                    }
+                }
+            });
+
+            tagsWrapper.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const t = e.target.dataset.tag;
+                    tags.delete(t);
+                    renderTags();
+                }
+            });
+
+            // Leaflet Mini-Map for picking location
+            const pickerMap = MapHelper.initMap('picker-map', { zoom: 7 });
+            let pickMarker = null;
+
+            function setPinLocation(lat, lng, locName = null) {
+                document.getElementById('latitude').value = lat.toFixed(6);
+                document.getElementById('longitude').value = lng.toFixed(6);
+
+                if (pickMarker) {
+                    pickMarker.setLatLng([lat, lng]);
+                } else {
+                    pickMarker = L.marker([lat, lng], { draggable: true }).addTo(pickerMap);
+                    pickMarker.on('dragend', async (e) => {
+                        const newPos = e.target.getLatLng();
+                        setPinLocation(newPos.lat, newPos.lng);
+                    });
+                }
+
+                if (locName) {
+                    document.getElementById('location-name').value = locName;
+                } else {
+                    MapHelper.reverseGeocode(lat, lng).then(name => {
+                        if (name) {
+                            document.getElementById('location-name').value = name;
+                        }
+                    });
+                }
+            }
+
+            pickerMap.on('click', (e) => {
+                setPinLocation(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Nominatim place search inside form
+            const searchInput = document.getElementById('map-search-box');
+            const searchResults = document.getElementById('map-search-results');
+            let searchDebounce = null;
+
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchDebounce);
+                const q = searchInput.value.trim();
+                if (q.length < 3) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+
+                searchDebounce = setTimeout(async () => {
+                    const results = await MapHelper.searchLocation(q);
+                    if (results.length === 0) {
+                        searchResults.innerHTML = '<div style="padding:0.6rem; color:var(--text-muted); font-size:0.8rem; font-family:\'Space Mono\',monospace;">NO PLACES FOUND.</div>';
+                        searchResults.style.display = 'block';
+                        return;
+                    }
+
+                    searchResults.innerHTML = results.map(r => `
+                        <div class="picker-search-item" style="padding:0.65rem 0.85rem; border-bottom:1px solid #0a0a0c; cursor:pointer; font-size:0.85rem;" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${escapeHtml(r.display_name)}">
+                            📍 ${escapeHtml(r.display_name)}
+                        </div>
+                    `).join('');
+
+                    searchResults.style.display = 'block';
+
+                    searchResults.querySelectorAll('.picker-search-item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const lat = parseFloat(el.dataset.lat);
+                            const lon = parseFloat(el.dataset.lon);
+                            const name = el.dataset.name;
+                            pickerMap.setView([lat, lon], 14);
+                            setPinLocation(lat, lon, name);
+                            searchResults.style.display = 'none';
+                            searchInput.value = '';
+                        });
+                    });
+                }, 400);
+            });
+
+            // Load Categories and Moods
+            try {
+                const [categories, moods] = await Promise.all([
+                    API.get('/api/categories'),
+                    API.get('/api/moods')
+                ]);
+
+                const catSelect = document.getElementById('category-id');
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.categoryId;
+                    opt.textContent = c.name.toUpperCase();
+                    catSelect.appendChild(opt);
+                });
+
+                const moodContainer = document.getElementById('mood-picker-container');
+                moods.forEach(m => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'mood-btn';
+                    btn.dataset.id = m.moodId;
+                    btn.innerHTML = `<span>${m.emoji}</span> <span>${escapeHtml(m.name.toUpperCase())}</span>`;
+                    btn.addEventListener('click', () => {
+                        moodContainer.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        document.getElementById('selected-mood-id').value = m.moodId;
+                    });
+                    moodContainer.appendChild(btn);
+                });
+            } catch (err) {
+                Toast.error('Failed to load categories and moods.');
+            }
+
+            // Photo Upload State
+            const selectedFiles = [];
+            const dropzone = document.getElementById('upload-dropzone');
+            const fileInput = document.getElementById('photo-file-input');
+            const previewGrid = document.getElementById('new-photos-preview');
+
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            function handleFiles(files) {
+                for (const file of files) {
+                    if (selectedFiles.length >= 5) {
+                        Toast.error('Maximum 5 photos allowed.');
+                        break;
+                    }
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        Toast.error(`"${file.name}" exceeds the 5 MB size limit.`);
+                        continue;
+                    }
+
+                    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        Toast.error(`"${file.name}" is not a supported image format.`);
+                        continue;
+                    }
+
+                    selectedFiles.push(file);
+                }
+                renderPhotoPreviews();
+            }
+
+            function renderPhotoPreviews() {
+                previewGrid.innerHTML = '';
+                selectedFiles.forEach((file, idx) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const card = document.createElement('div');
+                        card.className = 'photo-preview-card';
+                        card.innerHTML = `
+                            <img src="${e.target.result}" alt="preview">
+                            <button type="button" class="remove-btn" data-index="${idx}">&times;</button>
+                        `;
+                        previewGrid.appendChild(card);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            previewGrid.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-btn')) {
+                    const idx = parseInt(e.target.dataset.index);
+                    selectedFiles.splice(idx, 1);
+                    renderPhotoPreviews();
+                }
+            });
+
+            // Edit Mode Population
+            if (editingId) {
+                document.getElementById('form-heading').textContent = 'EDIT ARCHIVE ENTRY';
+                try {
+                    const memory = await API.get(`/api/memories/${editingId}`);
+                    document.getElementById('title').value = memory.title;
+                    document.getElementById('description').value = memory.description || '';
+                    document.getElementById('desc-char-count').textContent = `${(memory.description || '').length} / 2000`;
+                    document.getElementById('memory-date').value = memory.memoryDate.split('T')[0];
+                    document.getElementById('category-id').value = memory.categoryId;
+                    document.getElementById('location-name').value = memory.locationName || '';
+                    document.getElementById('visibility').value = memory.visibility;
+
+                    setPinLocation(memory.latitude, memory.longitude, memory.locationName);
+                    pickerMap.setView([memory.latitude, memory.longitude], 12);
+
+                    if (memory.mood) {
+                        document.getElementById('selected-mood-id').value = memory.mood.moodId;
+                        const moodBtn = document.querySelector(`.mood-btn[data-id="${memory.mood.moodId}"]`);
+                        if (moodBtn) moodBtn.classList.add('selected');
+                    }
+
+                    if (memory.tags) {
+                        memory.tags.forEach(t => tags.add(t));
+                        renderTags();
+                    }
+
+                    // Existing Photos
+                    if (memory.photos && memory.photos.length > 0) {
+                        const existingSec = document.getElementById('existing-photos-section');
+                        const existingGrid = document.getElementById('existing-photos-grid');
+                        existingSec.style.display = 'block';
+
+                        existingGrid.innerHTML = memory.photos.map(p => `
+                            <div class="photo-preview-card">
+                                <img src="${p.url}" alt="photo">
+                                ${p.isCover ? `<span class="badge badge-primary" style="position:absolute; bottom:4px; left:4px; font-size:0.65rem;">COVER</span>` : ''}
+                                <button type="button" class="remove-btn existing-photo-del" data-id="${p.photoId}">&times;</button>
+                            </div>
+                        `).join('');
+
+                        existingGrid.querySelectorAll('.existing-photo-del').forEach(btn => {
+                            btn.addEventListener('click', async () => {
+                                if (confirm('Delete this print permanently from the archive?')) {
+                                    await API.delete(`/api/photos/${btn.dataset.id}`);
+                                    Toast.success('Photo removed.');
+                                    btn.closest('.photo-preview-card').remove();
+                                }
+                            });
+                        });
+                    }
+                } catch (err) {
+                    Toast.error('Could not load memory for editing.');
+                }
+            }
+
+            // Form Submission
+            const form = document.getElementById('memory-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const lat = parseFloat(document.getElementById('latitude').value);
+                const lng = parseFloat(document.getElementById('longitude').value);
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    document.getElementById('coordinates-error').style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+
+                const title = document.getElementById('title').value.trim();
+                const description = document.getElementById('description').value.trim();
+                const memoryDate = document.getElementById('memory-date').value;
+                const categoryId = parseInt(document.getElementById('category-id').value);
+                const moodIdVal = document.getElementById('selected-mood-id').value;
+                const moodId = moodIdVal ? parseInt(moodIdVal) : null;
+                const locationName = document.getElementById('location-name').value.trim();
+                const visibility = parseInt(document.getElementById('visibility').value);
+
+                const saveBtn = document.getElementById('save-memory-btn');
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'COMMITTING...';
+
+                const payload = {
+                    title,
+                    description,
+                    memoryDate,
+                    latitude: lat,
+                    longitude: lng,
+                    locationName,
+                    categoryId,
+                    moodId,
+                    tags: Array.from(tags),
+                    visibility
+                };
+
+                try {
+                    let memoryResult;
+                    if (editingId) {
+                        memoryResult = await API.put(`/api/memories/${editingId}`, payload);
+                    } else {
+                        memoryResult = await API.post('/api/memories', payload);
+                    }
+
+                    const memId = memoryResult.memoryId || editingId;
+
+                    // If photos were selected, upload them now
+                    if (selectedFiles.length > 0) {
+                        saveBtn.textContent = 'UPLOADING PRINTS...';
+                        const formData = new FormData();
+                        selectedFiles.forEach(file => formData.append('files', file));
+                        await API.post(`/api/memories/${memId}/photos`, formData);
+                    }
+
+                    Toast.success('Memory archived successfully.');
+                    setTimeout(() => {
+                        window.location.href = `/memory-details.html?id=${memId}`;
+                    }, 500);
+                } catch (err) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'SAVE MEMORY \u2192';
+
+                    if (err.errors) {
+                        Toast.error('Please correct errors in the dossier form.');
+                    } else {
+                        Toast.error(err.message || 'Failed to archive memory.');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

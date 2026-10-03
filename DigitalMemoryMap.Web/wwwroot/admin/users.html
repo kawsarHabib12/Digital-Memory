@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management — Digital Memory Map Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="padding-top: 2rem; padding-bottom: 5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <a href="/admin/dashboard.html" style="font-size: 0.9rem; color: var(--text-secondary);">&larr; Back to Admin Dashboard</a>
+                <h1 style="font-size: 2rem; margin-top: 0.25rem;">👥 User Accounts</h1>
+            </div>
+            <div style="width: 300px;">
+                <input type="text" id="user-search-input" class="form-control" placeholder="Search name or email...">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th style="text-align: center;">Memories</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">Loading accounts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="user-pagination" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;"></div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAdmin()) return;
+            Auth.renderNavbar('admin-users');
+
+            let currentPage = 1;
+            const pageSize = 15;
+            const searchInput = document.getElementById('user-search-input');
+            let searchTimeout = null;
+
+            async function loadUsers(page = 1) {
+                currentPage = page;
+                const search = searchInput.value.trim();
+                const tbody = document.getElementById('users-tbody');
+
+                try {
+                    const data = await API.get('/api/admin/users', { search: search || undefined, page: currentPage, pageSize });
+
+                    if (data.items.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:2rem 0;">No users found.</td></tr>';
+                        document.getElementById('user-pagination').innerHTML = '';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.items.map(u => {
+                        const joinedDate = new Date(u.createdAt).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+
+                        return `
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(u.fullName)}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(u.email)}</div>
+                                </td>
+                                <td>
+                                    <span class="badge ${u.role === 'Admin' ? 'badge-primary' : 'badge-neutral'}">${escapeHtml(u.role)}</span>
+                                </td>
+                                <td style="font-size: 0.85rem; color: var(--text-secondary);">${joinedDate}</td>
+                                <td style="text-align: center; font-weight: 700; color: #a5b4fc;">${u.memoryCount}</td>
+                                <td>
+                                    <span class="badge ${u.isActive ? 'badge-success' : 'badge-danger'}">
+                                        ${u.isActive ? 'Active' : 'Deactivated'}
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    ${u.role !== 'Admin' ? `
+                                        <button class="btn btn-sm ${u.isActive ? 'btn-danger' : 'btn-primary'}" onclick="toggleStatus(${u.userId}, ${!u.isActive})">
+                                            ${u.isActive ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                    ` : '<span style="color:var(--text-muted); font-size:0.8rem;">Superuser</span>'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    renderPagination(data.page, data.totalPages);
+                } catch (err) {
+                    Toast.error('Failed to load user accounts.');
+                }
+            }
+
+            window.toggleStatus = async function(userId, newStatus) {
+                const actionWord = newStatus ? 'activate' : 'deactivate';
+                if (!confirm(`Are you sure you want to ${actionWord} this account?`)) return;
+
+                try {
+                    await API.put(`/api/admin/users/${userId}/status`, { isActive: newStatus });
+                    Toast.success(`User ${actionWord}d successfully.`);
+                    loadUsers(currentPage);
+                } catch (err) {
+                    Toast.error(err.message || 'Status update failed.');
+                }
+            };
+
+            function renderPagination(current, total) {
+                const container = document.getElementById('user-pagination');
+                if (total <= 1) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+                if (current > 1) {
+                    html += `<button class="btn btn-secondary btn-sm" onclick="loadUsers(${current - 1})">&larr; Prev</button>`;
+                }
+                for (let i = 1; i <= total; i++) {
+                    html += `<button class="btn ${i === current ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="loadUsers(${i})">${i}</button>`;
+                }
+                if (current < total) {
+                    html += `<button class="btn btn-secondary btn-sm" onclick="loadUsers(${current + 1})">Next &rarr;</button>`;
+                }
+                container.innerHTML = html;
+            }
+
+            window.loadUsers = loadUsers;
+
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => loadUsers(1), 350);
+            });
+
+            loadUsers(1);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivist Dossier — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="max-width: 900px; padding-top: 2.5rem; padding-bottom: 6rem;">
+        <!-- Editorial Masthead -->
+        <div class="card" style="margin-bottom: 2.5rem; padding: 2rem 2.5rem;">
+            <div class="mono-text" style="font-size: 0.78rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem;">
+                [ USER PROFILE &amp; SETTINGS ]
+            </div>
+            <h1 style="font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 0.4rem;" id="dossier-name-heading">
+                MY PROFILE
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 1rem; max-width: 650px; line-height: 1.5;">
+                Manage your personal details, view memory statistics, and update your account security credentials.
+            </p>
+        </div>
+
+        <!-- Archival Statistics Docket (3 Brutalist Counter Blocks) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+            <div class="stat-box">
+                <div class="stat-label">TOTAL ARCHIVE ENTRIES</div>
+                <div class="stat-value" id="profile-stat-memories">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">LIFETIME MOMENTS PINNED</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">MAPPED GEOGRAPHIES</div>
+                <div class="stat-value" id="profile-stat-locations">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">UNIQUE COORDINATE NODES</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">ARCHIVE STATUS</div>
+                <div class="stat-value" style="font-size: 2rem; margin-top: 0.8rem;">AUTHENTIC</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">SECURE &amp; VERIFIED</div>
+            </div>
+        </div>
+
+        <!-- Personal Info Card -->
+        <div class="card" style="margin-bottom: 2.5rem; background: var(--bg-surface-alt);">
+            <div class="card-header-bar">
+                <div>
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">DOSSIER SECTION 01</div>
+                    <h3 style="font-size: 1.25rem;">PERSONAL IDENTITY &amp; BIOGRAPHY</h3>
+                </div>
+                <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">PUBLIC REGISTRY</span>
+            </div>
+
+            <form id="profile-form">
+                <div class="form-group">
+                    <label class="form-label" for="profile-email">REGISTERED EMAIL IDENTIFIER</label>
+                    <input type="email" id="profile-email" class="form-control mono-text" readonly disabled style="background:#e4e3dc; cursor:not-allowed;">
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem;">
+                        Primary email identifier cannot be altered after registration.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="profile-fullname">ARCHIVIST FULL NAME *</label>
+                    <input type="text" id="profile-fullname" class="form-control" required minlength="2" maxlength="100">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="profile-bio">ARCHIVIST BIOGRAPHY &amp; TRAVEL PHILOSOPHY</label>
+                    <textarea id="profile-bio" class="form-control" placeholder="Share a few words about your travel style, personal memories, or photography adventures..." maxlength="300"></textarea>
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 0.35rem;">
+                        MAX 300 CHARACTERS
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-dark); padding-top: 1.25rem;">
+                    <button type="submit" id="save-profile-btn" class="btn btn-primary">SAVE CHANGES &rarr;</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Password Change Card -->
+        <div class="card" style="background: var(--bg-surface-alt);">
+            <div class="card-header-bar">
+                <div>
+                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">DOSSIER SECTION 02</div>
+                    <h3 style="font-size: 1.25rem;">CRYPTOGRAPHIC CREDENTIALS</h3>
+                </div>
+                <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">SECURITY KEY</span>
+            </div>
+
+            <form id="password-form">
+                <div class="form-group">
+                    <label class="form-label" for="current-password">CURRENT ACCESS PASSWORD *</label>
+                    <input type="password" id="current-password" class="form-control" required autocomplete="current-password">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new-password">NEW ACCESS PASSWORD *</label>
+                    <input type="password" id="new-password" class="form-control" placeholder="At least 8 chars with uppercase, lowercase, and digit" required minlength="8" maxlength="64" autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirm-new-password">CONFIRM NEW ACCESS PASSWORD *</label>
+                    <input type="password" id="confirm-new-password" class="form-control" required minlength="8" maxlength="64" autocomplete="new-password">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-dark); padding-top: 1.25rem;">
+                    <button type="submit" id="change-pwd-btn" class="btn btn-secondary">UPDATE CREDENTIALS &rarr;</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('profile');
+
+            // Load profile data and statistics
+            try {
+                const [profile, pins, paged] = await Promise.all([
+                    API.get('/api/profile'),
+                    API.get('/api/memories/map'),
+                    API.get('/api/memories', { pageSize: 1 })
+                ]);
+
+                document.getElementById('profile-email').value = profile.email;
+                document.getElementById('profile-fullname').value = profile.fullName;
+                document.getElementById('profile-bio').value = profile.bio || '';
+                document.getElementById('dossier-name-heading').textContent = `DOSSIER // ${profile.fullName.toUpperCase()}`;
+
+                document.getElementById('profile-stat-memories').textContent = paged.totalItems || '0';
+                const uniqueLocs = new Set(pins.map(p => `${p.latitude.toFixed(2)},${p.longitude.toFixed(2)}`));
+                document.getElementById('profile-stat-locations').textContent = uniqueLocs.size;
+            } catch (err) {
+                Toast.error('Could not load profile details.');
+            }
+
+            // Save profile changes
+            document.getElementById('profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fullName = document.getElementById('profile-fullname').value.trim();
+                const bio = document.getElementById('profile-bio').value.trim();
+
+                const btn = document.getElementById('save-profile-btn');
+                btn.disabled = true;
+                btn.textContent = 'COMMITTING...';
+
+                try {
+                    const updated = await API.put('/api/profile', { fullName, bio });
+                    const user = Auth.getUser();
+                    if (user) {
+                        user.fullName = updated.fullName;
+                        Auth.setUser(user);
+                    }
+                    Auth.renderNavbar('profile');
+                    document.getElementById('dossier-name-heading').textContent = `DOSSIER // ${updated.fullName.toUpperCase()}`;
+                    Toast.success('Profile dossier updated.');
+                } catch (err) {
+                    Toast.error(err.message || 'Failed to update profile.');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'SAVE CHANGES \u2192';
+                }
+            });
+
+            // Change password
+            document.getElementById('password-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+                if (newPassword !== confirmNewPassword) {
+                    Toast.error('New passwords do not match.');
+                    return;
+                }
+
+                if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+                    Toast.error('New password must contain uppercase, lowercase, and numeric digits.');
+                    return;
+                }
+
+                const btn = document.getElementById('change-pwd-btn');
+                btn.disabled = true;
+                btn.textContent = 'UPDATING...';
+
+                try {
+                    await API.post('/api/auth/change-password', {
+                        currentPassword,
+                        newPassword,
+                        confirmNewPassword
+                    });
+
+                    Toast.success('Password changed successfully.');
+                    document.getElementById('password-form').reset();
+                } catch (err) {
+                    Toast.error(err.message || 'Failed to change password.');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'UPDATE CREDENTIALS \u2192';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

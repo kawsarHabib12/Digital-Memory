@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curator's Archive Desk — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="padding-top: 2rem; padding-bottom: 5rem;">
+        <!-- Editorial Masthead / Archive Dossier Header -->
+        <div class="card" style="margin-bottom: 2rem; padding: 2rem 2.5rem; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+                <div>
+                    <div class="mono-text" style="font-size: 0.78rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem;">
+                        [ ARCHIVAL DESK // REGISTER 2026 ]
+                    </div>
+                    <h1 style="font-size: clamp(2rem, 4.5vw, 3.2rem); margin-bottom: 0.4rem;" id="welcome-heading">
+                        WELCOME BACK, ARCHIVIST
+                    </h1>
+                    <p style="color: var(--text-secondary); font-size: 1.05rem; max-width: 680px; line-height: 1.5;">
+                        Your personal cartographic memory repository. Explore mapped coordinates, review recent photo prints, or record a new life chapter.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="/map.html" class="btn btn-secondary">FULL MAP</a>
+                    <a href="/memory-form.html" class="btn btn-primary" id="dashboard-add-btn">+ ADD MEMORY</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archival Statistics Docket (3 Brutalist Counter Blocks) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="stat-box">
+                <div class="stat-label">01 // TOTAL ARCHIVED MOMENTS</div>
+                <div class="stat-value" id="stat-total-memories">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">LIFETIME ENTRIES RECORDED</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">02 // UNIQUE GEOGRAPHIC NODES</div>
+                <div class="stat-value" id="stat-unique-places">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">DISTINCT COORDINATES VISITED</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">03 // RECORDED THIS YEAR</div>
+                <div class="stat-value" id="stat-this-year">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">CURRENT YEAR CATALOGUED</div>
+            </div>
+        </div>
+
+        <!-- Main Workspace: Cartographic Atlas (7 cols) + Recent Moments Archive (5 cols) -->
+        <div style="display: grid; grid-template-columns: 1.7fr 1.1fr; gap: 1.75rem; align-items: start;">
+            <!-- Left: Interactive Leaflet Cartography -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div class="masthead-top">
+                    <span style="font-weight: 700;">CARTOGRAPHIC ATLAS &bull; PINNED ARCHIVE</span>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select id="filter-category" class="form-control" style="padding: 0.3rem 0.6rem; font-size: 0.78rem; width: auto; font-family:'Space Mono',monospace;">
+                            <option value="">ALL CATEGORIES</option>
+                        </select>
+                        <select id="filter-mood" class="form-control" style="padding: 0.3rem 0.6rem; font-size: 0.78rem; width: auto; font-family:'Space Mono',monospace;">
+                            <option value="">ALL MOODS</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="dashboard-map" style="height: 520px; width: 100%;"></div>
+            </div>
+
+            <!-- Right: Recent Curated Moments -->
+            <div class="card" style="padding: 1.5rem;">
+                <div class="card-header-bar">
+                    <div>
+                        <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted);">RECENT PRINTS</div>
+                        <h3 style="font-size: 1.25rem;">LATEST ADDITIONS</h3>
+                    </div>
+                    <a href="/timeline.html" class="mono-text" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">
+                        VIEW ALL &rarr;
+                    </a>
+                </div>
+
+                <div id="recent-memories-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 3rem 0;" class="mono-text">
+                        RETRIEVING ARCHIVE RECORDS...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('dashboard');
+
+            const user = Auth.getUser();
+            if (user && user.fullName) {
+                document.getElementById('welcome-heading').textContent = `ARCHIVE OF ${user.fullName.toUpperCase()}`;
+            }
+
+            // Init Leaflet map
+            const map = MapHelper.initMap('dashboard-map');
+            let markerLayer = null;
+
+            // Load Categories and Moods for filter dropdowns
+            try {
+                const [categories, moods] = await Promise.all([
+                    API.get('/api/categories'),
+                    API.get('/api/moods')
+                ]);
+
+                const catSelect = document.getElementById('filter-category');
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.categoryId;
+                    opt.textContent = c.name.toUpperCase();
+                    catSelect.appendChild(opt);
+                });
+
+                const moodSelect = document.getElementById('filter-mood');
+                moods.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.moodId;
+                    opt.textContent = `${m.emoji} ${m.name.toUpperCase()}`;
+                    moodSelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Failed to load filter options:', e);
+            }
+
+            // Load and draw Map Pins
+            async function loadPins() {
+                const catId = document.getElementById('filter-category').value;
+                const moodId = document.getElementById('filter-mood').value;
+
+                try {
+                    const pins = await API.get('/api/memories/map', { categoryId: catId, moodId: moodId });
+                    markerLayer = MapHelper.renderMemoryMarkers(map, pins, markerLayer);
+                    return pins;
+                } catch (err) {
+                    console.error('Failed to load pins:', err);
+                    return [];
+                }
+            }
+
+            document.getElementById('filter-category').addEventListener('change', loadPins);
+            document.getElementById('filter-mood').addEventListener('change', loadPins);
+
+            // Load recent memories & compute stats
+            async function loadDashboardData() {
+                try {
+                    const [pins, pagedResult] = await Promise.all([
+                        loadPins(),
+                        API.get('/api/memories', { pageSize: 5, sort: 'date_desc' })
+                    ]);
+
+                    // Quick Stats calculation
+                    document.getElementById('stat-total-memories').textContent = pagedResult.totalItems || '0';
+
+                    const currentYear = new Date().getFullYear();
+                    const thisYearCount = pins.filter(p => new Date(p.memoryDate).getFullYear() === currentYear).length;
+                    document.getElementById('stat-this-year').textContent = thisYearCount;
+
+                    // Unique places (by rounded coordinates or unique location name)
+                    const uniqueLocations = new Set(pins.map(p => `${p.latitude.toFixed(2)},${p.longitude.toFixed(2)}`));
+                    document.getElementById('stat-unique-places').textContent = uniqueLocations.size;
+
+                    // Render 5 recent memories
+                    const listContainer = document.getElementById('recent-memories-list');
+                    if (!pagedResult.items || pagedResult.items.length === 0) {
+                        listContainer.innerHTML = `
+                            <div style="text-align:center; padding: 3rem 1.5rem; border: var(--border-medium); background: var(--bg-surface-alt);">
+                                <div style="font-size:2rem; margin-bottom:0.5rem;">📷</div>
+                                <h4 style="font-size:1.1rem; margin-bottom:0.4rem;">NO MEMORIES PINNED YET</h4>
+                                <p style="color:var(--text-secondary); font-size:0.88rem; margin-bottom:1.25rem;">Capture your first memory with coordinates and photo prints.</p>
+                                <a href="/memory-form.html" class="btn btn-primary btn-sm">+ RECORD MEMORY</a>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    listContainer.innerHTML = pagedResult.items.map(m => {
+                        const dateFormatted = new Date(m.memoryDate).toLocaleDateString('en-GB', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                        }).replace(/\//g, '.');
+
+                        return `
+                            <div style="border: var(--border-medium); padding: 0.85rem; background: #ffffff; display: flex; gap: 0.95rem; align-items: center; box-shadow: var(--shadow-sm); transition: var(--transition);">
+                                ${m.coverPhotoUrl 
+                                    ? `<img src="${m.coverPhotoUrl}" style="width:68px; height:68px; border:1px solid #0a0a0c; object-fit:cover; flex-shrink:0;" alt="${escapeHtml(m.title)}" onerror="this.style.display='none'"/>` 
+                                    : `<div style="width:68px; height:68px; border:1px solid #0a0a0c; background:#0a0a0c; color:#ffffff; display:flex; align-items:center; justify-content:center; font-size:1.6rem; flex-shrink:0;">${m.moodEmoji || '📌'}</div>`
+                                }
+                                <div style="flex:1; min-width:0;">
+                                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.25rem;">
+                                        <span class="badge badge-neutral" style="font-size:0.68rem; padding:0.15rem 0.4rem;">${escapeHtml(m.category)}</span>
+                                        <span class="mono-text" style="font-size:0.75rem; font-weight:700;">${dateFormatted}</span>
+                                    </div>
+                                    <a href="/memory-details.html?id=${m.memoryId}" style="font-size:1rem; font-weight:700; color:#0a0a0c; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; letter-spacing:-0.01em;">
+                                        ${escapeHtml(m.title)}
+                                    </a>
+                                    <div style="font-size:0.8rem; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:0.2rem;">
+                                        📍 ${escapeHtml(m.locationName || 'Pinned coordinates')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } catch (e) {
+                    console.error('Failed to load dashboard data:', e);
+                }
+            }
+
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html>

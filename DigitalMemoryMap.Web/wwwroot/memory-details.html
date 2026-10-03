@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Dossier — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="max-width: 1100px; padding-top: 2.5rem; padding-bottom: 5rem;">
+        <!-- Top Action Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; border-bottom: var(--border-thick); padding-bottom: 1rem;">
+            <a href="/dashboard.html" class="mono-text" style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">
+                &larr; BACK TO DASHBOARD
+            </a>
+            <div style="display: flex; gap: 0.75rem;">
+                <a id="edit-memory-btn" href="#" class="btn btn-secondary btn-sm">EDIT MEMORY</a>
+                <button id="delete-memory-btn" class="btn btn-danger btn-sm">DELETE MEMORY</button>
+            </div>
+        </div>
+
+        <div id="memory-content-wrapper">
+            <div style="text-align: center; padding: 5rem 0; color: var(--text-muted);" class="mono-text">
+                LOADING ARCHIVAL DOSSIER...
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const memoryId = urlParams.get('id');
+
+            if (!memoryId) {
+                window.location.href = '/dashboard.html';
+                return;
+            }
+
+            document.getElementById('edit-memory-btn').href = `/memory-form.html?id=${memoryId}`;
+
+            // Delete memory handler
+            document.getElementById('delete-memory-btn').addEventListener('click', async () => {
+                if (confirm('Are you sure you want to delete this memory from the archive? This action cannot be undone.')) {
+                    try {
+                        await API.delete(`/api/memories/${memoryId}`);
+                        Toast.success('Memory deleted from archive.');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard.html';
+                        }, 500);
+                    } catch (err) {
+                        Toast.error(err.message || 'Failed to delete memory.');
+                    }
+                }
+            });
+
+            // Load Details
+            try {
+                const mem = await API.get(`/api/memories/${memoryId}`);
+                renderDetails(mem);
+            } catch (err) {
+                document.getElementById('memory-content-wrapper').innerHTML = `
+                    <div class="card" style="text-align:center; padding: 4rem 2rem;">
+                        <div style="font-size:2.5rem; margin-bottom:1rem;">📂</div>
+                        <h2 style="font-size:1.6rem; margin-bottom:0.5rem;">DOSSIER NOT FOUND</h2>
+                        <p style="color:var(--text-secondary); margin-bottom:1.5rem;">This entry may have been removed or belongs to another private archive.</p>
+                        <a href="/dashboard.html" class="btn btn-primary">RETURN TO ARCHIVE</a>
+                    </div>
+                `;
+            }
+
+            function renderDetails(m) {
+                const formattedDate = new Date(m.memoryDate).toLocaleDateString('en-GB', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const dateNumeric = new Date(m.memoryDate).toLocaleDateString('en-GB', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).replace(/\//g, '.');
+
+                // Determine cover photo or hero photo
+                const coverPhoto = (m.photos && m.photos.length > 0) 
+                    ? (m.photos.find(p => p.isCover) || m.photos[0]) 
+                    : null;
+
+                const remainingPhotos = m.photos ? m.photos.filter(p => p !== coverPhoto) : [];
+
+                const peopleTags = (m.tags || []).filter(t => t.toLowerCase().startsWith('with:') || t.toLowerCase().startsWith('people:') || t.toLowerCase().startsWith('@'));
+                const otherTags = (m.tags || []).filter(t => !peopleTags.includes(t));
+
+                const html = `
+                    <article>
+                        <!-- Large Hero Exhibition Photo -->
+                        ${coverPhoto ? `
+                            <div class="card" style="padding:0; overflow:hidden; margin-bottom:2.5rem;">
+                                <div class="masthead-top">
+                                    <span>EXHIBITION PRINT // HERO ARCHIVE</span>
+                                    <span>CATALOGUE ID: #${m.memoryId}</span>
+                                    <span>35MM FORMAT</span>
+                                </div>
+                                <div style="position:relative; max-height:560px; overflow:hidden; background:#000;">
+                                    <img src="${coverPhoto.url}" alt="${escapeHtml(m.title)}" style="width:100%; height:100%; max-height:560px; object-fit:cover; display:block; filter:contrast(1.04);" />
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Memory Editorial Header & Metadata Docket -->
+                        <div class="card" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                                <span class="badge badge-primary">${escapeHtml(m.category)}</span>
+                                <span class="mono-text" style="font-weight:700; font-size:0.95rem;">${dateNumeric}</span>
+                            </div>
+
+                            <h1 style="font-size: clamp(2.4rem, 5.5vw, 4rem); line-height: 1.02; margin-bottom: 1rem; text-transform: uppercase;">
+                                ${escapeHtml(m.title)}
+                            </h1>
+
+                            <div style="font-family:'Space Mono', monospace; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 1.75rem;">
+                                ${formattedDate}
+                            </div>
+
+                            <!-- Structured Archival Docket Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; border-top: var(--border-thick); border-bottom: var(--border-thick); padding: 1.5rem 0; margin-bottom: 2rem;">
+                                <div>
+                                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">LOCATION</div>
+                                    <div style="font-weight: 700; font-size: 1.05rem; margin-top: 0.2rem;">
+                                        📍 ${escapeHtml(m.locationName || 'Unspecified location')}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">MOOD &amp; EMOTION</div>
+                                    <div style="font-weight: 700; font-size: 1.05rem; margin-top: 0.2rem;">
+                                        ${m.mood ? `${m.mood.emoji} ${escapeHtml(m.mood.name)}` : 'Neutral'}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">CLASSIFICATION</div>
+                                    <div style="font-weight: 700; font-size: 1.05rem; margin-top: 0.2rem;">
+                                        ${m.visibility === 0 ? '🔒 Private Archive' : '🌐 Public Registry'}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">PEOPLE / COMPANIONS</div>
+                                    <div style="font-weight: 700; font-size: 1.05rem; margin-top: 0.2rem;">
+                                        ${peopleTags.length > 0 ? peopleTags.map(p => escapeHtml(p.replace(/^(with:|people:|@)/i, ''))).join(', ') : (m.tags && m.tags.length > 0 ? m.tags.join(', ') : 'Solo Moment')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tags Section -->
+                            ${m.tags && m.tags.length > 0 ? `
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 2rem;">
+                                    <span class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.5rem;">TAGS:</span>
+                                    ${m.tags.map(t => `<span class="tag-chip">🏷️ ${escapeHtml(t)}</span>`).join('')}
+                                </div>
+                            ` : ''}
+
+                            <!-- Story / Description -->
+                            ${m.description ? `
+                                <div>
+                                    <div class="mono-text" style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">
+                                        [ FIELD NOTES &amp; MEMORY CHRONICLE ]
+                                    </div>
+                                    <div style="font-size: 1.15rem; line-height: 1.8; color: var(--text-primary); white-space: pre-wrap; padding: 2rem; background: var(--bg-surface-alt); border: var(--border-medium); font-family: 'Space Grotesk', sans-serif;">
+                                        ${escapeHtml(m.description)}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Photos Exhibition Collage Gallery -->
+                        ${m.photos && m.photos.length > 0 ? `
+                            <section style="margin-bottom: 3rem;">
+                                <div class="card-header-bar">
+                                    <div>
+                                        <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted);">ARCHIVAL PRINTS (${m.photos.length})</div>
+                                        <h3 style="font-size: 1.4rem;">PHOTO EXHIBITION</h3>
+                                    </div>
+                                    <span class="mono-text" style="font-size: 0.8rem; font-weight: 700;">FILM ROLL REEL</span>
+                                </div>
+
+                                <!-- Editorial Collage Layout: Large hero + stacked companions -->
+                                <div class="exhibition-gallery">
+                                    <div class="gallery-hero">
+                                        <div class="gallery-item" style="height: 100%; min-height: 420px;">
+                                            <a href="${coverPhoto ? coverPhoto.url : m.photos[0].url}" target="_blank">
+                                                <img src="${coverPhoto ? coverPhoto.url : m.photos[0].url}" alt="Primary Exhibition Print" />
+                                            </a>
+                                            <div class="item-label">PRIMARY PRINT // #01</div>
+                                        </div>
+                                    </div>
+                                    <div class="gallery-stack">
+                                        ${(remainingPhotos.length > 0 ? remainingPhotos.slice(0, 2) : [coverPhoto]).map((p, idx) => `
+                                            <div class="gallery-item" style="height: 200px;">
+                                                <a href="${p.url}" target="_blank">
+                                                    <img src="${p.url}" alt="Archived Print" />
+                                                </a>
+                                                <div class="item-label">PRINT #${idx + 2} ${p.isCover ? '★' : ''}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                ${remainingPhotos.length > 2 ? `
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                                        ${remainingPhotos.slice(2).map((p, idx) => `
+                                            <div class="polaroid-card">
+                                                <a href="${p.url}" target="_blank">
+                                                    <img src="${p.url}" alt="${escapeHtml(m.title)}" />
+                                                </a>
+                                                <div class="polaroid-caption">
+                                                    <span>PRINT #${idx + 4}</span>
+                                                    <span>${p.fileSizeKb ? `${p.fileSizeKb} KB` : 'ARCHIVE'}</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </section>
+                        ` : ''}
+
+                        <!-- Pinned Cartographic Coordinates Map -->
+                        <div class="card" style="padding: 0; overflow: hidden;">
+                            <div class="masthead-top">
+                                <span>PINNED CARTOGRAPHIC COORDINATES</span>
+                                <span class="mono-text">LAT: ${m.latitude.toFixed(4)}° &bull; LON: ${m.longitude.toFixed(4)}°</span>
+                                <span>${escapeHtml(m.locationName || '')}</span>
+                            </div>
+                            <div id="details-map" style="height: 340px; width: 100%;"></div>
+                        </div>
+                    </article>
+                `;
+
+                document.getElementById('memory-content-wrapper').innerHTML = html;
+
+                // Initialize mini details map
+                setTimeout(() => {
+                    const detailMap = MapHelper.initMap('details-map', {
+                        center: [m.latitude, m.longitude],
+                        zoom: 13
+                    });
+                    const icon = MapHelper.createMarkerIcon(m.mood ? m.mood.emoji : '📍');
+                    L.marker([m.latitude, m.longitude], { icon }).addTo(detailMap)
+                        .bindPopup(`<b>${escapeHtml(m.title)}</b><br>${escapeHtml(m.locationName || '')}`)
+                        .openPopup();
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

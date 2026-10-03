@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronological Archive Timeline — Digital Memory Map</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="max-width: 1040px; padding-top: 2.5rem; padding-bottom: 6rem;">
+        <!-- Top Editorial Masthead -->
+        <div class="card" style="margin-bottom: 2.5rem; padding: 2rem 2.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+                <div>
+                    <div class="mono-text" style="font-size: 0.78rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem;">
+                        [ CHRONOLOGICAL ARCHIVE // 2026 ]
+                    </div>
+                    <h1 style="font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 0.4rem;">
+                        MEMORY TIMELINE
+                    </h1>
+                    <p style="color: var(--text-secondary); font-size: 1rem; max-width: 600px; line-height: 1.5;">
+                        A continuous chronological retrospective across time and geography. Every moment anchored to its date and coordinates.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <select id="sort-select" class="form-control" style="width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; font-family:'Space Mono',monospace;">
+                        <option value="date_desc">NEWEST TO OLDEST</option>
+                        <option value="date_asc">OLDEST TO NEWEST</option>
+                    </select>
+                    <a href="/memory-form.html" class="btn btn-primary btn-sm">+ ADD MEMORY</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archival Filter Docket -->
+        <div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; background: var(--bg-surface-alt);">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 220px;">
+                    <label class="form-label" for="timeline-keyword">SEARCH KEYWORD</label>
+                    <input type="text" id="timeline-keyword" class="form-control" placeholder="Search by title, story, or companions...">
+                </div>
+                <div style="width: 220px;">
+                    <label class="form-label" for="timeline-category">CATEGORY</label>
+                    <select id="timeline-category" class="form-control">
+                        <option value="">ALL CATEGORIES</option>
+                    </select>
+                </div>
+                <div>
+                    <button id="timeline-filter-btn" class="btn btn-primary" style="height: 48px;">FILTER TIMELINE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chronological Timeline Stream -->
+        <div id="timeline-container" class="timeline"></div>
+
+        <!-- Empty State -->
+        <div id="timeline-empty" style="display: none; text-align: center; padding: 5rem 1.5rem;" class="card">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🗓️</div>
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem;">NO MEMORIES FOUND IN CHRONICLE</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Record a new life moment with coordinates and photos to initiate the timeline.</p>
+            <a href="/memory-form.html" class="btn btn-primary">+ RECORD MEMORY</a>
+        </div>
+
+        <!-- Load More Container -->
+        <div style="text-align: center; margin-top: 3rem;">
+            <button id="load-more-btn" class="btn btn-secondary btn-lg" style="display: none;">
+                LOAD OLDER ARCHIVES &darr;
+            </button>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('timeline');
+
+            let currentPage = 1;
+            let totalPages = 1;
+            let lastRenderedYear = null;
+            const pageSize = 10;
+            const timelineContainer = document.getElementById('timeline-container');
+            const emptyNotice = document.getElementById('timeline-empty');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+
+            // Load Categories for filter dropdown
+            try {
+                const categories = await API.get('/api/categories');
+                const catSelect = document.getElementById('timeline-category');
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.categoryId;
+                    opt.textContent = c.name.toUpperCase();
+                    catSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Failed to load categories:', err);
+            }
+
+            async function fetchTimeline(page = 1, append = false) {
+                const sort = document.getElementById('sort-select').value;
+                const keyword = document.getElementById('timeline-keyword').value.trim();
+                const categoryId = document.getElementById('timeline-category').value;
+
+                if (!append) {
+                    timelineContainer.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:4rem 0;" class="mono-text">ASSEMBLING CHRONOLOGICAL STREAM...</div>';
+                    emptyNotice.style.display = 'none';
+                    lastRenderedYear = null;
+                }
+
+                try {
+                    const result = await API.get('/api/memories', {
+                        page,
+                        pageSize,
+                        sort,
+                        keyword: keyword || undefined,
+                        categoryId: categoryId || undefined
+                    });
+
+                    currentPage = result.page;
+                    totalPages = result.totalPages;
+
+                    if (!append) {
+                        timelineContainer.innerHTML = '';
+                    }
+
+                    if (result.items.length === 0 && !append) {
+                        emptyNotice.style.display = 'block';
+                        loadMoreBtn.style.display = 'none';
+                        return;
+                    }
+
+                    result.items.forEach(item => {
+                        const dateObj = new Date(item.memoryDate);
+                        const year = dateObj.getFullYear();
+                        const monthName = dateObj.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase();
+                        const dayNum = String(dateObj.getDate()).padStart(2, '0');
+
+                        // Render Large Year Marker when year changes
+                        if (lastRenderedYear !== year) {
+                            const yearMarker = document.createElement('div');
+                            yearMarker.className = 'timeline-year-marker';
+                            yearMarker.innerHTML = `
+                                <span>${year}</span>
+                                <span class="timeline-year-label">ARCHIVE VOLUME // ${year}</span>
+                            `;
+                            timelineContainer.appendChild(yearMarker);
+                            lastRenderedYear = year;
+                        }
+
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'timeline-entry';
+                        itemEl.innerHTML = `
+                            <div class="timeline-date-stamp">
+                                <div class="timeline-day">${dayNum}</div>
+                                <div class="timeline-month">${monthName}</div>
+                            </div>
+                            <article class="timeline-card">
+                                ${item.coverPhotoUrl 
+                                    ? `<img src="${item.coverPhotoUrl}" class="timeline-card-photo" alt="${escapeHtml(item.title)}" onerror="this.style.display='none'">` 
+                                    : `<div class="timeline-card-photo" style="display:flex; align-items:center; justify-content:center; font-size:3rem; color:#fff;">${item.moodEmoji || '📌'}</div>`
+                                }
+                                <div class="timeline-card-content">
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap; gap:0.4rem;">
+                                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                                <span class="badge badge-primary">${escapeHtml(item.category)}</span>
+                                                ${item.moodEmoji ? `<span>${item.moodEmoji}</span>` : ''}
+                                            </div>
+                                            <span class="mono-text" style="font-size:0.75rem; color:var(--text-muted);">REF #${item.memoryId}</span>
+                                        </div>
+                                        <h3 style="font-size:1.4rem; margin-bottom:0.4rem; text-transform:uppercase;">
+                                            <a href="/memory-details.html?id=${item.memoryId}" style="color:#0a0a0c;">${escapeHtml(item.title)}</a>
+                                        </h3>
+                                        <p style="font-size:0.92rem; color:var(--text-secondary); line-height:1.6; margin-bottom:0.75rem;">
+                                            ${escapeHtml(item.snippet || 'No written notes recorded for this pinned moment.')}
+                                        </p>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-dark); padding-top:0.75rem; margin-top:0.75rem;">
+                                        <span style="font-size:0.85rem; color:var(--text-secondary); font-family:'Space Grotesk',sans-serif;">
+                                            📍 ${escapeHtml(item.locationName || 'Pinned coordinates')}
+                                        </span>
+                                        <a href="/memory-details.html?id=${item.memoryId}" class="mono-text" style="font-weight:700; font-size:0.82rem; text-transform:uppercase;">
+                                            READ DOSSIER &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        `;
+                        timelineContainer.appendChild(itemEl);
+                    });
+
+                    loadMoreBtn.style.display = (currentPage < totalPages) ? 'inline-flex' : 'none';
+                } catch (err) {
+                    Toast.error('Failed to load timeline.');
+                }
+            }
+
+            document.getElementById('sort-select').addEventListener('change', () => fetchTimeline(1, false));
+            document.getElementById('timeline-filter-btn').addEventListener('click', () => fetchTimeline(1, false));
+            loadMoreBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    fetchTimeline(currentPage + 1, true);
+                }
+            });
+
+            // Initial fetch
+            fetchTimeline(1, false);
+        });
+    </script>
+</body>
+</html>

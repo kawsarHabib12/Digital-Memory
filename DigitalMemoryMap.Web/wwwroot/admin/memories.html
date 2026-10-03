@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Moderation — Digital Memory Map Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="padding-top: 2rem; padding-bottom: 5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <a href="/admin/dashboard.html" style="font-size: 0.9rem; color: var(--text-secondary);">&larr; Back to Admin Dashboard</a>
+                <h1 style="font-size: 2rem; margin-top: 0.25rem;">🗺️ Content Moderation</h1>
+                <p style="color: var(--text-secondary);">Browse all platform memories and remove inappropriate content.</p>
+            </div>
+            <div style="width: 300px;">
+                <input type="text" id="memory-search-input" class="form-control" placeholder="Search title or owner...">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Memory</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memories-tbody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">Loading content...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="memories-pagination" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;"></div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAdmin()) return;
+            Auth.renderNavbar('admin-memories');
+
+            let currentPage = 1;
+            const pageSize = 15;
+            const searchInput = document.getElementById('memory-search-input');
+            let searchTimer = null;
+
+            async function loadMemories(page = 1) {
+                currentPage = page;
+                const keyword = searchInput.value.trim();
+                const tbody = document.getElementById('memories-tbody');
+
+                try {
+                    const data = await API.get('/api/admin/memories', { keyword: keyword || undefined, page: currentPage, pageSize });
+
+                    if (data.items.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:2rem 0;">No memories found.</td></tr>';
+                        document.getElementById('memories-pagination').innerHTML = '';
+                        return;
+                    }
+
+                    tbody.innerHTML = data.items.map(m => {
+                        const dateStr = new Date(m.memoryDate).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+
+                        return `
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(m.title)}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-secondary); max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        ${escapeHtml(m.snippet)}
+                                    </div>
+                                </td>
+                                <td style="font-size: 0.85rem; color: var(--text-secondary);">${dateStr}</td>
+                                <td>
+                                    <span class="badge badge-primary">${escapeHtml(m.category)}</span>
+                                    ${m.moodEmoji ? `<span style="margin-left:0.25rem;">${m.moodEmoji}</span>` : ''}
+                                </td>
+                                <td style="font-size: 0.85rem; color: var(--text-muted); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    📍 ${escapeHtml(m.locationName || 'Pinned')}
+                                </td>
+                                <td style="text-align: right; white-space: nowrap;">
+                                    <a href="/memory-details.html?id=${m.memoryId}" target="_blank" class="btn btn-secondary btn-sm" style="margin-right: 0.4rem;">View</a>
+                                    <button class="btn btn-danger btn-sm" onclick="removeMemory(${m.memoryId})">Remove</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    renderPagination(data.page, data.totalPages);
+                } catch (err) {
+                    Toast.error('Failed to load memories for moderation.');
+                }
+            }
+
+            window.removeMemory = async function(memoryId) {
+                if (!confirm('Are you sure you want to remove this memory from public/user view?')) return;
+
+                try {
+                    await API.delete(`/api/admin/memories/${memoryId}`);
+                    Toast.success('Memory removed successfully.');
+                    loadMemories(currentPage);
+                } catch (err) {
+                    Toast.error(err.message || 'Failed to remove memory.');
+                }
+            };
+
+            function renderPagination(current, total) {
+                const container = document.getElementById('memories-pagination');
+                if (total <= 1) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+                if (current > 1) {
+                    html += `<button class="btn btn-secondary btn-sm" onclick="loadMemories(${current - 1})">&larr; Prev</button>`;
+                }
+                for (let i = 1; i <= total; i++) {
+                    html += `<button class="btn ${i === current ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="loadMemories(${i})">${i}</button>`;
+                }
+                if (current < total) {
+                    html += `<button class="btn btn-secondary btn-sm" onclick="loadMemories(${current + 1})">Next &rarr;</button>`;
+                }
+                container.innerHTML = html;
+            }
+
+            window.loadMemories = loadMemories;
+
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => loadMemories(1), 350);
+            });
+
+            loadMemories(1);
+        });
+    </script>
+</body>
+</html>
