@@ -280,17 +280,30 @@ const MockBackend = {
             return { message: "Password updated successfully." };
         }
 
-        // Admin
-        if (path.startsWith('/api/admin')) {
+        // Admin Endpoints
+        if (path === '/api/admin/stats') {
+            const list = getStoredMemories();
             return {
-                totalUsers: 12,
-                totalMemories: getStoredMemories().length,
-                totalPhotos: 28,
-                users: [
-                    { userId: 1, fullName: "System Admin", email: "admin@digitalmemory.com", role: "Admin", isActive: true },
-                    { userId: 2, fullName: "Guest Curator", email: "curator@digitalmemory.io", role: "User", isActive: true }
-                ]
+                totalUsers: 14,
+                activeUsers: 12,
+                newUsersThisWeek: 4,
+                totalMemories: list.length,
+                totalPhotos: list.reduce((sum, m) => sum + (m.photoCount || (m.photos ? m.photos.length : 1)), 0),
+                categoryStats: DEMO_CATEGORIES.map(c => ({
+                    categoryName: c.name,
+                    memoryCount: list.filter(m => m.categoryId === c.categoryId).length
+                }))
             };
+        }
+        if (path === '/api/admin/users') {
+            return [
+                { userId: 1, fullName: "System Admin", email: "admin@digitalmemory.com", role: "Admin", isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+                { userId: 2, fullName: "Kawsar Habib", email: "kawsar@digitalmemory.io", role: "User", isActive: true, createdAt: "2026-02-15T00:00:00Z" },
+                { userId: 3, fullName: "Archivist Member", email: "member@digitalmemory.io", role: "User", isActive: true, createdAt: "2026-03-10T00:00:00Z" }
+            ];
+        }
+        if (path === '/api/admin/memories') {
+            return getStoredMemories();
         }
 
         return {};
