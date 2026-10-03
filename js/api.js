@@ -170,12 +170,48 @@ const MockBackend = {
             };
         }
 
-        // Memories List & Filter
-        if (path === '/api/memories') {
+        // Map Pins endpoint
+        if (path === '/api/memories/map') {
+            const list = getStoredMemories();
+            const catId = params.get('categoryId');
+            const moodId = params.get('moodId');
+            let filtered = [...list];
+            if (catId) filtered = filtered.filter(m => m.categoryId == catId);
+            if (moodId) filtered = filtered.filter(m => m.moodId == moodId);
+            return filtered.map(m => ({
+                memoryId: m.memoryId,
+                title: m.title,
+                memoryDate: m.memoryDate,
+                latitude: parseFloat(m.latitude),
+                longitude: parseFloat(m.longitude),
+                locationName: m.locationName,
+                category: m.categoryName || m.category || 'Travel',
+                moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📍'),
+                thumbnailUrl: m.coverPhotoUrl || (m.photos && m.photos[0] ? m.photos[0].photoUrl : null)
+            }));
+        }
+
+        // Nearby endpoint
+        if (path === '/api/memories/nearby') {
+            const list = getStoredMemories();
+            return list.map(m => ({
+                memoryId: m.memoryId,
+                title: m.title,
+                memoryDate: m.memoryDate,
+                latitude: parseFloat(m.latitude),
+                longitude: parseFloat(m.longitude),
+                locationName: m.locationName,
+                distanceKm: 2.5
+            }));
+        }
+
+        // Memories List, Filter & Creation
+        if (path === '/api/memories' || path === '/api/memories/search') {
             const list = getStoredMemories();
             if (method === 'GET') {
                 let filtered = [...list];
-                const search = params.get('search');
+                const search = params.get('search') || params.get('keyword');
+                const loc = params.get('location');
                 const catId = params.get('categoryId');
                 const moodId = params.get('moodId');
 
@@ -187,13 +223,34 @@ const MockBackend = {
                         (m.locationName && m.locationName.toLowerCase().includes(q))
                     );
                 }
+                if (loc) {
+                    const q = loc.toLowerCase();
+                    filtered = filtered.filter(m => m.locationName && m.locationName.toLowerCase().includes(q));
+                }
                 if (catId) {
                     filtered = filtered.filter(m => m.categoryId == catId);
                 }
                 if (moodId) {
                     filtered = filtered.filter(m => m.moodId == moodId);
                 }
-                return filtered;
+
+                const page = parseInt(params.get('page') || '1');
+                const pageSize = parseInt(params.get('pageSize') || '10');
+                const startIndex = (page - 1) * pageSize;
+                const paged = filtered.slice(startIndex, startIndex + pageSize);
+
+                return {
+                    items: paged.map(m => ({
+                        ...m,
+                        category: m.categoryName || m.category || 'Travel',
+                        moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📌'),
+                        snippet: m.description ? (m.description.substring(0, 120) + (m.description.length > 120 ? '...' : '')) : ''
+                    })),
+                    totalItems: filtered.length,
+                    page: page,
+                    pageSize: pageSize,
+                    totalPages: Math.max(1, Math.ceil(filtered.length / pageSize))
+                };
             }
 
             if (method === 'POST') {
@@ -207,31 +264,35 @@ const MockBackend = {
                         longitude: parseFloat(options.body.get('longitude')) || 90.4125,
                         locationName: options.body.get('locationName') || 'Pinned Location',
                         categoryId: parseInt(options.body.get('categoryId')) || 1,
-                        moodId: parseInt(options.body.get('moodId')) || 1
+                        moodId: parseInt(options.body.get('moodId')) || null
                     };
-                } else if (typeof options.body === 'string') {
-                    try { newMem = JSON.parse(options.body); } catch {}
+                } else {
+                    try {
+                        newMem = typeof options.body === 'string' ? JSON.parse(options.body) : (options.body || {});
+                    } catch {}
                 }
 
-                const cat = DEMO_CATEGORIES.find(c => c.categoryId === newMem.categoryId) || DEMO_CATEGORIES[0];
-                const mood = DEMO_MOODS.find(m => m.moodId === newMem.moodId) || DEMO_MOODS[0];
+                const cat = DEMO_CATEGORIES.find(c => c.categoryId === parseInt(newMem.categoryId)) || DEMO_CATEGORIES[0];
+                const mood = DEMO_MOODS.find(m => m.moodId === parseInt(newMem.moodId)) || null;
 
                 const created = {
                     memoryId: Date.now(),
-                    title: newMem.title,
-                    description: newMem.description,
-                    memoryDate: newMem.memoryDate,
-                    latitude: newMem.latitude,
-                    longitude: newMem.longitude,
-                    locationName: newMem.locationName,
+                    title: newMem.title || 'Untitled Memory',
+                    description: newMem.description || '',
+                    memoryDate: newMem.memoryDate || new Date().toISOString(),
+                    latitude: parseFloat(newMem.latitude) || 23.8103,
+                    longitude: parseFloat(newMem.longitude) || 90.4125,
+                    locationName: newMem.locationName || 'Pinned Location',
                     categoryId: cat.categoryId,
                     categoryName: cat.name,
-                    moodId: mood.moodId,
-                    moodName: mood.name,
-                    moodEmoji: mood.emoji,
-                    tags: ['Archive'],
+                    category: cat.name,
+                    moodId: mood ? mood.moodId : null,
+                    moodName: mood ? mood.name : '',
+                    moodEmoji: mood ? mood.emoji : '📌',
+                    mood: mood,
+                    tags: Array.isArray(newMem.tags) ? newMem.tags : ['Archive'],
                     photos: [
-                        { photoId: Date.now(), photoUrl: 'images/beach.jpg', isCover: true, caption: 'New Archival Photo' }
+                        { photoId: Date.now(), photoUrl: 'images/beach.jpg', isCover: true, caption: 'Archival Print' }
                     ],
                     photoCount: 1,
                     coverPhotoUrl: 'images/beach.jpg'
@@ -241,6 +302,12 @@ const MockBackend = {
                 saveStoredMemories(list);
                 return created;
             }
+        }
+
+        // Photo Upload endpoint
+        const photoUploadMatch = path.match(/^\/api\/memories\/(\d+)\/photos/);
+        if (photoUploadMatch) {
+            return { message: 'Photo uploaded successfully' };
         }
 
         // Memory By ID

@@ -160,20 +160,25 @@
                         API.get('/api/memories', { pageSize: 5, sort: 'date_desc' })
                     ]);
 
+                    // Safe parsing whether backend returns paged object or array
+                    const itemsList = pagedResult.items || (Array.isArray(pagedResult) ? pagedResult : []);
+                    const totalCount = pagedResult.totalItems !== undefined ? pagedResult.totalItems : itemsList.length;
+                    const pinsList = Array.isArray(pins) && pins.length > 0 ? pins : itemsList;
+
                     // Quick Stats calculation
-                    document.getElementById('stat-total-memories').textContent = pagedResult.totalItems || '0';
+                    document.getElementById('stat-total-memories').textContent = totalCount;
 
                     const currentYear = new Date().getFullYear();
-                    const thisYearCount = pins.filter(p => new Date(p.memoryDate).getFullYear() === currentYear).length;
+                    const thisYearCount = pinsList.filter(p => new Date(p.memoryDate).getFullYear() === currentYear).length;
                     document.getElementById('stat-this-year').textContent = thisYearCount;
 
                     // Unique places (by rounded coordinates or unique location name)
-                    const uniqueLocations = new Set(pins.map(p => `${p.latitude.toFixed(2)},${p.longitude.toFixed(2)}`));
+                    const uniqueLocations = new Set(pinsList.map(p => p.locationName || `${(parseFloat(p.latitude) || 0).toFixed(2)},${(parseFloat(p.longitude) || 0).toFixed(2)}`));
                     document.getElementById('stat-unique-places').textContent = uniqueLocations.size;
 
                     // Render 5 recent memories
                     const listContainer = document.getElementById('recent-memories-list');
-                    if (!pagedResult.items || pagedResult.items.length === 0) {
+                    if (itemsList.length === 0) {
                         listContainer.innerHTML = `
                             <div style="text-align:center; padding: 3rem 1.5rem; border: var(--border-medium); background: var(--bg-surface-alt);">
                                 <div style="font-size:2rem; margin-bottom:0.5rem;">📷</div>
@@ -185,7 +190,7 @@
                         return;
                     }
 
-                    listContainer.innerHTML = pagedResult.items.map(m => {
+                    listContainer.innerHTML = itemsList.map(m => {
                         const dateFormatted = new Date(m.memoryDate).toLocaleDateString('en-GB', {
                             year: 'numeric',
                             month: '2-digit',
