@@ -121,33 +121,27 @@ const MockBackend = {
         const path = urlObj.pathname.replace(/^\/Digital-Memory/, '');
         const params = urlObj.searchParams;
 
-        // Auto-seed demo user if on GitHub Pages
-        if (!Auth.getUser()) {
-            Auth.setUser({
-                userId: 1,
-                fullName: "Guest Archivist",
-                email: "curator@digitalmemory.io",
-                role: "Admin"
-            });
-        }
-
         // Auth
         if (path === '/api/auth/me') {
-            return Auth.getUser() || { userId: 1, fullName: "Guest Archivist", email: "curator@digitalmemory.io", role: "Admin" };
+            const user = Auth.getUser();
+            if (!user) throw new Error('Unauthorized');
+            return user;
         }
         if (path === '/api/auth/login' || path === '/api/auth/register') {
             let body = {};
             if (options.body) {
                 try { body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch {}
             }
+            const email = body.email || "curator@digitalmemory.io";
+            const isAdmin = email.toLowerCase().includes('admin');
             const user = {
                 userId: 1,
-                fullName: body.fullName || "Archive Member",
-                email: body.email || "member@digitalmemory.io",
-                role: "User"
+                fullName: body.fullName || (email.split('@')[0].toUpperCase()),
+                email: email,
+                role: isAdmin ? "Admin" : "User"
             };
             Auth.setUser(user);
-            return { token: "demo-token", user };
+            return user;
         }
         if (path === '/api/auth/logout') {
             Auth.clearUser();

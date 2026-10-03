@@ -31,15 +31,17 @@ const Auth = {
     },
 
     getBasePath() {
-        const path = window.location.pathname;
-        const idx = path.indexOf('/Digital-Memory');
-        if (idx !== -1) {
-            return '/Digital-Memory/';
+        const pathname = window.location.pathname;
+        if (window.location.hostname.endsWith('github.io')) {
+            const repoName = pathname.split('/')[1];
+            return repoName ? `/${repoName}/` : '/';
         }
         return '/';
     },
 
     url(path) {
+        if (!path) return this.getBasePath();
+        if (path.startsWith('http://') || path.startsWith('https://')) return path;
         const clean = path.startsWith('/') ? path.substring(1) : path;
         return this.getBasePath() + clean;
     },

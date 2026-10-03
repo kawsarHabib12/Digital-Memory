@@ -42,11 +42,11 @@
             const memoryId = urlParams.get('id');
 
             if (!memoryId) {
-                window.location.href = '/dashboard.html';
+                window.location.href = Auth.url('dashboard.html');
                 return;
             }
 
-            document.getElementById('edit-memory-btn').href = `/memory-form.html?id=${memoryId}`;
+            document.getElementById('edit-memory-btn').href = Auth.url(`memory-form.html?id=${memoryId}`);
 
             // Delete memory handler
             document.getElementById('delete-memory-btn').addEventListener('click', async () => {
@@ -55,7 +55,7 @@
                         await API.delete(`/api/memories/${memoryId}`);
                         Toast.success('Memory deleted from archive.');
                         setTimeout(() => {
-                            window.location.href = '/dashboard.html';
+                            window.location.href = Auth.url('dashboard.html');
                         }, 500);
                     } catch (err) {
                         Toast.error(err.message || 'Failed to delete memory.');

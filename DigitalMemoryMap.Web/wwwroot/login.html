@@ -55,7 +55,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (Auth.isLoggedIn()) {
-                window.location.href = '/dashboard.html';
+                window.location.href = Auth.url('dashboard.html');
                 return;
             }
 
@@ -81,9 +81,10 @@
                     Auth.setUser(data);
                     Toast.success(`Welcome back, ${data.fullName}!`);
 
-                    const returnUrl = urlParams.get('returnUrl') || '/dashboard.html';
+                    const rawReturn = urlParams.get('returnUrl') || 'dashboard.html';
+                    const target = Auth.url(rawReturn);
                     setTimeout(() => {
-                        window.location.href = returnUrl;
+                        window.location.href = target;
                     }, 400);
                 } catch (err) {
                     showAlert(err.message || 'Invalid email or password.');

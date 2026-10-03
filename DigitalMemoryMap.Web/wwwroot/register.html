@@ -65,7 +65,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (Auth.isLoggedIn()) {
-                window.location.href = '/dashboard.html';
+                window.location.href = Auth.url('dashboard.html');
                 return;
             }
 
@@ -105,7 +105,7 @@
                     Auth.setUser(data);
                     Toast.success('Account created successfully!');
                     setTimeout(() => {
-                        window.location.href = '/dashboard.html';
+                        window.location.href = Auth.url('dashboard.html');
                     }, 400);
                 } catch (err) {
                     submitBtn.disabled = false;
