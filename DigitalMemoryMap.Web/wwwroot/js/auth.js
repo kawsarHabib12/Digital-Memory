@@ -126,8 +126,78 @@ const Auth = {
 
         navHtml += `</nav>`;
         navContainer.innerHTML = navHtml;
+    },
+
+    initPasswordToggles() {
+        // Auto-wrap any unwrapped password inputs
+        document.querySelectorAll('input[type="password"]').forEach(input => {
+            if (input.closest('.password-toggle-wrapper')) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'password-toggle-wrapper';
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'password-toggle-btn';
+            btn.setAttribute('aria-label', 'Show password');
+            btn.setAttribute('title', 'Show password');
+            btn.innerHTML = `
+                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-off-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                    <line x1="2" y1="2" x2="22" y2="22"></line>
+                </svg>`;
+            wrapper.appendChild(btn);
+        });
+
+        // Attach click handlers to all toggle buttons
+        document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+            if (btn.dataset.initialized === 'true') return;
+            btn.dataset.initialized = 'true';
+
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const wrapper = btn.closest('.password-toggle-wrapper');
+                if (!wrapper) return;
+                const input = wrapper.querySelector('input');
+                if (!input) return;
+
+                const isCurrentlyPassword = input.type === 'password';
+                input.type = isCurrentlyPassword ? 'text' : 'password';
+
+                const eyeIcon = btn.querySelector('.eye-icon');
+                const eyeOffIcon = btn.querySelector('.eye-off-icon');
+
+                if (eyeIcon) eyeIcon.style.display = isCurrentlyPassword ? 'none' : 'block';
+                if (eyeOffIcon) eyeOffIcon.style.display = isCurrentlyPassword ? 'block' : 'none';
+
+                const newLabel = isCurrentlyPassword ? 'Hide password' : 'Show password';
+                btn.setAttribute('aria-label', newLabel);
+                btn.setAttribute('title', newLabel);
+
+                input.focus();
+                try {
+                    const len = input.value.length;
+                    input.setSelectionRange(len, len);
+                } catch {
+                    // ignore if not supported
+                }
+            });
+        });
     }
 };
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => Auth.initPasswordToggles());
+} else {
+    Auth.initPasswordToggles();
+}
 
 function escapeHtml(text) {
     if (!text) return '';
@@ -140,3 +210,4 @@ function escapeHtml(text) {
     };
     return text.toString().replace(/[&<>"']/g, m => map[m]);
 }
+

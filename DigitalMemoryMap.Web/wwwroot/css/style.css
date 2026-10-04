@@ -710,6 +710,60 @@ textarea.form-control {
     display: block;
 }
 
+/* Password Visibility Toggle */
+.password-toggle-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-toggle-wrapper .form-control {
+    width: 100%;
+    padding-right: 2.75rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition);
+    border-radius: var(--radius-none);
+    z-index: 2;
+    line-height: 1;
+}
+
+.password-toggle-btn:hover {
+    color: var(--text-primary);
+    background: rgba(10, 10, 12, 0.05);
+}
+
+.password-toggle-btn:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 1px;
+}
+
+.password-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    pointer-events: none;
+}
+
 /* Mood Stamps */
 .mood-picker {
     display: flex;
