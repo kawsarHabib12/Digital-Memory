@@ -50,6 +50,13 @@ public class MemoriesController : BaseApiController
         return Ok(pins);
     }
 
+    [HttpGet("my-journey")]
+    public async Task<IActionResult> GetMyJourney()
+    {
+        var journey = await _memoryService.GetJourneyPointsAsync(CurrentUserId);
+        return Ok(journey);
+    }
+
     [HttpGet("nearby")]
     public async Task<IActionResult> GetNearby(
         [FromQuery] decimal lat,

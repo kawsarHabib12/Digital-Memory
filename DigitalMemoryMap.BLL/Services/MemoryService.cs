@@ -215,6 +215,30 @@ public class MemoryService : IMemoryService
         return memories.Select(MapToListItemDto).ToList();
     }
 
+    public async Task<List<JourneyPointDto>> GetJourneyPointsAsync(int userId)
+    {
+        var memories = await _memoryRepository.GetJourneyMemoriesAsync(userId);
+        return memories.Select(m =>
+        {
+            var coverPhoto = m.Photos.FirstOrDefault(p => p.IsCover) ?? m.Photos.FirstOrDefault();
+            return new JourneyPointDto
+            {
+                MemoryId = m.MemoryId,
+                Title = m.Title,
+                Description = m.Description,
+                MemoryDate = m.MemoryDate,
+                Latitude = m.Latitude,
+                Longitude = m.Longitude,
+                LocationName = m.LocationName,
+                CategoryId = m.CategoryId,
+                Category = m.Category?.Name ?? string.Empty,
+                MoodEmoji = m.Mood?.Emoji,
+                MoodName = m.Mood?.Name,
+                ThumbnailUrl = coverPhoto != null ? $"/api/photos/{coverPhoto.PhotoId}/file" : null
+            };
+        }).ToList();
+    }
+
     private static void ValidateMemoryInput(string title, string? description, DateTime date, decimal lat, decimal lng, List<string>? tags)
     {
         if (string.IsNullOrWhiteSpace(title) || title.Trim().Length < 3 || title.Trim().Length > 100)

@@ -179,4 +179,70 @@ public class MemoryServiceTests
         // Assert
         _memoryRepoMock.Verify(r => r.DeleteAsync(ownMemory), Times.Once);
     }
+
+    [Fact]
+    public async Task GetJourneyPoints_ReturnsChronologicalPoints_ForSpecificUser()
+    {
+        // Arrange
+        var userId = 5;
+        var memories = new List<Memory>
+        {
+            new()
+            {
+                MemoryId = 1,
+                UserId = userId,
+                Title = "Dhaka City Center",
+                MemoryDate = new DateTime(2025, 1, 1),
+                Latitude = 23.8103m,
+                Longitude = 90.4125m,
+                LocationName = "Dhaka",
+                Category = new Category { Name = "Urban" },
+                Mood = new Mood { Emoji = "🌆", Name = "Excited" },
+                Photos = new List<MemoryPhoto> { new() { PhotoId = 10, IsCover = true } }
+            },
+            new()
+            {
+                MemoryId = 2,
+                UserId = userId,
+                Title = "Chittagong Port",
+                MemoryDate = new DateTime(2025, 1, 5),
+                Latitude = 22.3569m,
+                Longitude = 91.7832m,
+                LocationName = "Chittagong",
+                Category = new Category { Name = "Travel" },
+                Mood = new Mood { Emoji = "🌊", Name = "Peaceful" },
+                Photos = new List<MemoryPhoto>()
+            }
+        };
+
+        _memoryRepoMock.Setup(r => r.GetJourneyMemoriesAsync(userId)).ReturnsAsync(memories);
+
+        // Act
+        var result = await _memoryService.GetJourneyPointsAsync(userId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Dhaka City Center", result[0].Title);
+        Assert.Equal(23.8103m, result[0].Latitude);
+        Assert.Equal("/api/photos/10/file", result[0].ThumbnailUrl);
+        Assert.Equal("Chittagong Port", result[1].Title);
+        Assert.Null(result[1].ThumbnailUrl);
+        _memoryRepoMock.Verify(r => r.GetJourneyMemoriesAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetJourneyPoints_EmptyWhenNoMemories_ReturnsEmptyList()
+    {
+        // Arrange
+        var userId = 99;
+        _memoryRepoMock.Setup(r => r.GetJourneyMemoriesAsync(userId)).ReturnsAsync(new List<Memory>());
+
+        // Act
+        var result = await _memoryService.GetJourneyPointsAsync(userId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
 }

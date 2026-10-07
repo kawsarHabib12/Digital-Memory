@@ -115,3 +115,20 @@ public class MapPinDto
     public string? MoodEmoji { get; set; }
     public string? ThumbnailUrl { get; set; }
 }
+
+public class JourneyPointDto
+{
+    public int MemoryId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public DateTime MemoryDate { get; set; }
+    public decimal Latitude { get; set; }
+    public decimal Longitude { get; set; }
+    public string? LocationName { get; set; }
+    public int CategoryId { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public string? MoodEmoji { get; set; }
+    public string? MoodName { get; set; }
+    public string? ThumbnailUrl { get; set; }
+}
+

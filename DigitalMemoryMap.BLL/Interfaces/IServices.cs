@@ -26,6 +26,7 @@ public interface IMemoryService
     Task<PagedResultDto<MemoryListItemDto>> GetPagedMemoriesAsync(MemoryFilterRequestDto filter);
     Task<List<MapPinDto>> GetMapPinsAsync(int? userId, int? categoryId, byte? moodId, DateTime? from, DateTime? to);
     Task<List<MemoryListItemDto>> GetNearbyMemoriesAsync(int userId, decimal lat, decimal lng, double radiusKm);
+    Task<List<JourneyPointDto>> GetJourneyPointsAsync(int userId);
 }
 
 public class MemoryFilterRequestDto

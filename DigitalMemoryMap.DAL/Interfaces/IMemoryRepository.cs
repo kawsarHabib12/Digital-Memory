@@ -54,4 +54,5 @@ public interface IMemoryRepository
     Task<int> GetTotalCountAsync();
     Task<List<CategoryMemoryCount>> GetCategoryMemoryCountsAsync();
     Task<List<MonthlyMemoryCount>> GetMonthlyMemoryCountsAsync(int year);
+    Task<List<Memory>> GetJourneyMemoriesAsync(int userId);
 }

@@ -1295,3 +1295,129 @@ textarea.form-control {
         grid-column: span 1 !important;
     }
 }
+
+/* ==========================================================================
+   My Travel Journey Map Components
+   ========================================================================== */
+.journey-marker-badge {
+    width: 32px;
+    height: 32px;
+    background: #0a0a0c;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(10, 10, 12, 0.45);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+}
+
+.journey-marker-badge:hover,
+.journey-marker-badge.active-marker {
+    transform: scale(1.25);
+    background: #0a0a0c;
+    border-color: #facc15;
+    box-shadow: 0 4px 12px rgba(10, 10, 12, 0.6);
+}
+
+.journey-marker-badge.start-point {
+    background: #0a0a0c;
+    border: 2.5px solid #22c55e;
+}
+
+.journey-marker-badge.end-point {
+    background: #0a0a0c;
+    border: 2.5px solid #ef4444;
+}
+
+.journey-timeline-card {
+    background: #ffffff;
+    border: var(--border-thick);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+}
+
+.journey-timeline-card:hover {
+    background: #faf9f5;
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.journey-timeline-card.active {
+    background: #0a0a0c;
+    color: #ffffff;
+    transform: translateX(6px);
+}
+
+.journey-timeline-card.active .mono-text,
+.journey-timeline-card.active h4,
+.journey-timeline-card.active p,
+.journey-timeline-card.active .journey-step-badge {
+    color: #ffffff !important;
+}
+
+.journey-timeline-card.active .journey-step-badge {
+    background: #ffffff;
+    color: #0a0a0c !important;
+    border-color: #ffffff;
+}
+
+.journey-step-badge {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    background: #0a0a0c;
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: 0.15rem;
+}
+
+.journey-flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    padding: 0.25rem 0;
+    user-select: none;
+}
+
+.trip-tab-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border: var(--border-thick);
+    background: #ffffff;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: var(--transition);
+}
+
+.trip-tab-btn:hover {
+    background: var(--bg-surface-alt);
+}
+
+.trip-tab-btn.active {
+    background: #0a0a0c;
+    color: #ffffff;
+}
+

@@ -102,6 +102,7 @@ const Auth = {
             navHtml += `
                 <li><a href="${this.url('dashboard.html')}" class="nav-link ${activePage === 'dashboard' ? 'active' : ''}">DASHBOARD</a></li>
                 <li><a href="${this.url('map.html')}" class="nav-link ${activePage === 'map' ? 'active' : ''}">MAP</a></li>
+                <li><a href="${this.url('journey.html')}" class="nav-link ${activePage === 'journey' ? 'active' : ''}">MY JOURNEY</a></li>
                 <li><a href="${this.url('timeline.html')}" class="nav-link ${activePage === 'timeline' ? 'active' : ''}">TIMELINE</a></li>
                 <li><a href="${this.url('search.html')}" class="nav-link ${activePage === 'search' ? 'active' : ''}">SEARCH</a></li>
                 <li><a href="${this.url('memory-form.html')}" class="nav-link ${activePage === 'add-memory' ? 'active' : ''}">+ ADD MEMORY</a></li>

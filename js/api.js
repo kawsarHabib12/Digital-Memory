@@ -106,6 +106,78 @@ function getInitialDemoMemories() {
             ],
             photoCount: 1,
             coverPhotoUrl: "images/roadtrip.jpg"
+        },
+        {
+            memoryId: 4,
+            userId: 1,
+            userName: "Atlas Curator",
+            userEmail: "demo@digitalmemory.io",
+            visibility: 1, // Public
+            title: "PORT HARBOR & ANCHORAGE WATCH",
+            description: "Watching merchant ships glide along the Karnaphuli river at twilight. The sea breeze signaling the coast.",
+            memoryDate: "2026-06-18T18:00:00Z",
+            latitude: 22.3569,
+            longitude: 91.7832,
+            locationName: "Chittagong Harbor",
+            categoryId: 1,
+            categoryName: "Travel",
+            moodId: 1,
+            moodName: "Happy",
+            moodEmoji: "😊",
+            tags: ["Travel", "Harbor", "Coast"],
+            photos: [
+                { photoId: 4, photoUrl: "images/beach.jpg", isCover: true, caption: "Harbor horizon" }
+            ],
+            photoCount: 1,
+            coverPhotoUrl: "images/beach.jpg"
+        },
+        {
+            memoryId: 5,
+            userId: 1,
+            userName: "Atlas Curator",
+            userEmail: "demo@digitalmemory.io",
+            visibility: 1, // Public
+            title: "MISTY CLOUD VALLEY OF SAJEK",
+            description: "Waking up above sea level with sea of clouds rolling beneath wooden hill chalets. Untouched serenity.",
+            memoryDate: "2026-09-05T07:30:00Z",
+            latitude: 23.3820,
+            longitude: 92.2938,
+            locationName: "Sajek Valley",
+            categoryId: 1,
+            categoryName: "Travel",
+            moodId: 5,
+            moodName: "Excited",
+            moodEmoji: "😍",
+            tags: ["Travel", "Mountains", "Clouds"],
+            photos: [
+                { photoId: 5, photoUrl: "images/roadtrip.jpg", isCover: true, caption: "Sajek hill vista" }
+            ],
+            photoCount: 1,
+            coverPhotoUrl: "images/roadtrip.jpg"
+        },
+        {
+            memoryId: 6,
+            userId: 1,
+            userName: "Atlas Curator",
+            userEmail: "demo@digitalmemory.io",
+            visibility: 1, // Public
+            title: "ROLLING TEA GARDENS RETREAT",
+            description: "Drizzling rain washing over endless green terraced slopes of Lawachara and Sreemangal tea estates.",
+            memoryDate: "2026-09-12T11:00:00Z",
+            latitude: 24.3065,
+            longitude: 91.7296,
+            locationName: "Sreemangal, Sylhet",
+            categoryId: 1,
+            categoryName: "Travel",
+            moodId: 6,
+            moodName: "Peaceful",
+            moodEmoji: "😌",
+            tags: ["Nature", "TeaGardens", "Rain"],
+            photos: [
+                { photoId: 6, photoUrl: "images/beach.jpg", isCover: true, caption: "Tea slopes" }
+            ],
+            photoCount: 1,
+            coverPhotoUrl: "images/beach.jpg"
         }
     ];
 }
@@ -322,6 +394,48 @@ const MockBackend = {
                 moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📍'),
                 thumbnailUrl: m.coverPhotoUrl || (m.photos && m.photos[0] ? m.photos[0].photoUrl : null)
             }));
+        }
+
+        // My Travel Journey Map endpoint (Scoped strictly to authenticated user's locations)
+        if (path === '/api/memories/my-journey') {
+            if (!currentUser) throw new Error('Unauthorized: Please sign in to view your travel journey.');
+            const list = getStoredMemories();
+            const userMemories = list.filter(m => {
+                if (m.userId !== currentUser.userId) return false;
+                if (m.status !== undefined && m.status !== 1) return false;
+                const lat = parseFloat(m.latitude);
+                const lng = parseFloat(m.longitude);
+                if (isNaN(lat) || isNaN(lng)) return false;
+                if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+                if (lat === 0 && lng === 0) return false;
+                return true;
+            });
+
+            // Sort strictly chronologically: earliest date first, tie-break by memoryId
+            userMemories.sort((a, b) => {
+                const dateA = new Date(a.memoryDate).getTime();
+                const dateB = new Date(b.memoryDate).getTime();
+                if (dateA !== dateB) return dateA - dateB;
+                return (a.memoryId || 0) - (b.memoryId || 0);
+            });
+
+            return userMemories.map(m => {
+                const coverPhoto = m.coverPhotoUrl || (m.photos && m.photos[0] ? (m.photos[0].photoUrl || m.photos[0].url) : null);
+                return {
+                    memoryId: m.memoryId,
+                    title: m.title,
+                    description: m.description,
+                    memoryDate: m.memoryDate,
+                    latitude: parseFloat(m.latitude),
+                    longitude: parseFloat(m.longitude),
+                    locationName: m.locationName,
+                    categoryId: m.categoryId,
+                    category: m.categoryName || m.category || 'Travel',
+                    moodEmoji: m.moodEmoji || (m.mood ? m.mood.emoji : '📍'),
+                    moodName: m.moodName || (m.mood ? m.mood.name : ''),
+                    thumbnailUrl: coverPhoto
+                };
+            });
         }
 
         // Nearby endpoint (Filtered with privacy rule)

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Travel Journey Map — Digital Memory Map</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        .journey-layout {
+            display: grid;
+            grid-template-columns: 1.85fr 1.15fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        #journey-map-container {
+            position: relative;
+            background: #ffffff;
+            border: var(--border-thick);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        #journey-map {
+            width: 100%;
+            height: 600px;
+            z-index: 10;
+        }
+
+        .journey-archive-scroll {
+            max-height: 670px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .journey-archive-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .journey-archive-scroll::-webkit-scrollbar-thumb {
+            background: #0a0a0c;
+        }
+
+        .trip-selector-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            align-items: center;
+        }
+
+        .map-corner-badge {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            z-index: 1000;
+            background: #0a0a0c;
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            border: 1px solid #333333;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1024px) {
+            .journey-layout {
+                grid-template-columns: 1fr;
+            }
+            #journey-map {
+                height: 480px;
+            }
+            .journey-archive-scroll {
+                max-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="max-width: 1320px; padding-top: 2rem; padding-bottom: 6rem;">
+        <!-- Editorial Masthead -->
+        <div class="card" style="margin-bottom: 2rem; padding: 2.25rem 2.5rem; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+                <div>
+                    <div class="mono-text" style="font-size: 0.78rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem;">
+                        [ PERSONAL EXPEDITION ARCHIVE // RETROSPECTIVE ROUTE ]
+                    </div>
+                    <h1 style="font-size: clamp(2.4rem, 5vw, 3.8rem); line-height: 0.95; margin-bottom: 0.75rem;">
+                        MY<br>JOURNEY
+                    </h1>
+                    <p style="color: var(--text-secondary); font-size: 1.05rem; max-width: 680px; line-height: 1.55;">
+                        Every memory is a point in your life, and together those points tell the story of where you have been.
+                        Chronologically connected into your personal geographic odyssey.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                    <button id="fit-journey-btn" class="btn btn-secondary" title="Fit map to all journey locations">FIT ROUTE</button>
+                    <a href="map.html" class="btn btn-secondary">PIN ATLAS</a>
+                    <a href="memory-form.html" class="btn btn-primary">+ ADD MEMORY</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Travel Journey Summary Docket (5 Brutalist Stat Counters) -->
+        <div id="journey-stats-docket" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+            <div class="stat-box">
+                <div class="stat-label">01 // PLACES VISITED</div>
+                <div class="stat-value" id="stat-places-visited">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">UNIQUE LOCATIONS</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">02 // MEMORIES RECORDED</div>
+                <div class="stat-value" id="stat-memories-count">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">EXPEDITION POINTS</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">03 // CITIES &amp; REGIONS</div>
+                <div class="stat-value" id="stat-cities-count">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">GEOGRAPHIC ZONES</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">04 // TRAVEL PERIOD</div>
+                <div class="stat-value" style="font-size: 1.85rem;" id="stat-travel-period">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">CHRONICLE RANGE</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">05 // ROUTE SPAN</div>
+                <div class="stat-value" id="stat-route-distance">-</div>
+                <div class="mono-text" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">APPROX. DISTANCE</div>
+            </div>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="journey-empty-state" class="card" style="display: none; text-align: center; padding: 5rem 2rem; background: #ffffff;">
+            <div style="font-size: 3.5rem; margin-bottom: 1.25rem;">🗺️</div>
+            <div class="mono-text" style="font-size: 0.8rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.5rem;">
+                [ ZERO COORDINATE NODES FOUND ]
+            </div>
+            <h2 style="font-size: clamp(1.8rem, 3.5vw, 2.5rem); margin-bottom: 0.75rem;">
+                YOUR JOURNEY HASN'T STARTED YET.
+            </h2>
+            <p style="color: var(--text-secondary); max-width: 520px; margin: 0 auto 2rem; font-size: 1.05rem; line-height: 1.6;">
+                Add a memory with a location to begin building your personal travel map. Each place you record will weave together into your personal journey route.
+            </p>
+            <a href="memory-form.html" class="btn btn-primary btn-lg" style="letter-spacing: 0.08em;">
+                + ADD YOUR FIRST MEMORY &rarr;
+            </a>
+        </div>
+
+        <!-- Main Journey Interface -->
+        <div id="journey-content-section" style="display: none;">
+            <!-- Trip Segmentation Tabs -->
+            <div class="card" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; background: var(--bg-surface-alt);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span class="mono-text" style="font-size: 0.75rem; font-weight: 700;">FILTER EXPEDITIONS:</span>
+                        <div id="trip-tabs-container" class="trip-selector-bar" style="margin-bottom: 0;"></div>
+                    </div>
+                    <div class="mono-text" id="current-view-legend" style="font-size: 0.75rem; color: var(--text-muted);">
+                        CHRONOLOGICAL ROUTE SEQUENCE
+                    </div>
+                </div>
+            </div>
+
+            <div class="journey-layout">
+                <!-- Left: Interactive Cartographic Journey Map -->
+                <div>
+                    <div id="journey-map-container">
+                        <div class="masthead-top" style="background:#ffffff; border-bottom:var(--border-thick); padding:0.75rem 1.25rem;">
+                            <span style="font-weight: 700; letter-spacing:0.04em;">EXPEDITION MAP &bull; CHRONOLOGICAL TRAJECTORY</span>
+                            <span id="active-trip-indicator" class="badge badge-primary">ALL EXPEDITIONS</span>
+                        </div>
+                        <div id="journey-map"></div>
+                        <div class="map-corner-badge" id="map-corner-status">
+                            POINTS LINKED IN CHRONOLOGICAL ORDER
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Journey Timeline Archive -->
+                <div>
+                    <div class="card" style="padding: 1.5rem; background: #ffffff;">
+                        <div class="card-header-bar" style="margin-bottom: 1.25rem;">
+                            <div>
+                                <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted);">JOURNEY ARCHIVE</div>
+                                <h3 style="font-size: 1.25rem; margin-top: 0.2rem;">EXPEDITION ITINERARY</h3>
+                            </div>
+                            <span id="stops-counter-badge" class="mono-text" style="font-weight: 700; font-size: 0.85rem;">0 STOPS</span>
+                        </div>
+
+                        <div id="journey-stops-list" class="journey-archive-scroll"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/map.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            Auth.renderNavbar('journey');
+
+            const emptyState = document.getElementById('journey-empty-state');
+            const contentSection = document.getElementById('journey-content-section');
+            const tripTabsContainer = document.getElementById('trip-tabs-container');
+            const stopsList = document.getElementById('journey-stops-list');
+            const stopsBadge = document.getElementById('stops-counter-badge');
+            const activeTripBadge = document.getElementById('active-trip-indicator');
+            const fitBtn = document.getElementById('fit-journey-btn');
+
+            let map = null;
+            let markerLayerGroup = null;
+            let polylineLayerGroup = null;
+            let allJourneyPoints = [];
+            let groupedTrips = [];
+            let currentSelectedTripIndex = -1; // -1 means All Trips
+            let markersMap = new Map(); // memoryId -> L.marker
+
+            // Distance helper (Haversine formula in kilometers)
+            function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Earth's radius in km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = 
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            // Group memories into intelligent trips based on date gaps (e.g. gap > 21 days)
+            function groupPointsIntoTrips(points) {
+                if (!points || points.length === 0) return [];
+
+                const trips = [];
+                let currentTrip = [points[0]];
+
+                for (let i = 1; i < points.length; i++) {
+                    const prev = points[i - 1];
+                    const curr = points[i];
+
+                    const prevDate = new Date(prev.memoryDate).getTime();
+                    const currDate = new Date(curr.memoryDate).getTime();
+                    const dayDifference = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+
+                    // Separate into a new trip if gap is greater than 25 days
+                    if (dayDifference > 25) {
+                        trips.push(currentTrip);
+                        currentTrip = [curr];
+                    } else {
+                        currentTrip.push(curr);
+                    }
+                }
+
+                if (currentTrip.length > 0) {
+                    trips.push(currentTrip);
+                }
+
+                return trips;
+            }
+
+            // Format date for editorial style
+            function formatEditorialDate(dateStr) {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }).toUpperCase();
+            }
+
+            function formatShortMonthYear(dateStr) {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-GB', {
+                    month: 'short',
+                    year: 'numeric'
+                }).toUpperCase();
+            }
+
+            // Initialize Map
+            function initJourneyMap() {
+                if (map) return;
+                map = MapHelper.initMap('journey-map', { zoom: 7 });
+                markerLayerGroup = L.layerGroup().addTo(map);
+                polylineLayerGroup = L.layerGroup().addTo(map);
+            }
+
+            // Create Numbered Marker Icon
+            function createNumberedMarkerIcon(number, isStart, isEnd) {
+                let badgeClass = 'journey-marker-badge';
+                if (isStart) badgeClass += ' start-point';
+                if (isEnd && !isStart) badgeClass += ' end-point';
+
+                return L.divIcon({
+                    className: 'custom-journey-icon',
+                    html: `<div class="${badgeClass}" title="Stop ${number}">${number}</div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -18]
+                });
+            }
+
+            // Render Map Elements & Timeline for currently selected trip (or all trips)
+            function renderJourneyView() {
+                if (!map) initJourneyMap();
+
+                markerLayerGroup.clearLayers();
+                polylineLayerGroup.clearLayers();
+                markersMap.clear();
+
+                const pointsToDisplay = currentSelectedTripIndex === -1 
+                    ? allJourneyPoints 
+                    : (groupedTrips[currentSelectedTripIndex] || []);
+
+                if (pointsToDisplay.length === 0) return;
+
+                // 1. Render Polylines
+                if (currentSelectedTripIndex === -1) {
+                    // Draw separate polylines for each trip segment to avoid giant nonsensical connecting lines across months/years
+                    groupedTrips.forEach((trip, tripIdx) => {
+                        if (trip.length > 1) {
+                            const latlngs = trip.map(p => [p.latitude, p.longitude]);
+                            
+                            // Outer solid crisp line
+                            const line = L.polyline(latlngs, {
+                                color: '#0a0a0c',
+                                weight: 3.5,
+                                opacity: 0.85,
+                                dashArray: '6, 6',
+                                lineJoin: 'round'
+                            });
+                            polylineLayerGroup.addLayer(line);
+                        }
+                    });
+                } else {
+                    // Single selected trip polyline
+                    if (pointsToDisplay.length > 1) {
+                        const latlngs = pointsToDisplay.map(p => [p.latitude, p.longitude]);
+                        const line = L.polyline(latlngs, {
+                            color: '#0a0a0c',
+                            weight: 4,
+                            opacity: 0.95,
+                            dashArray: '8, 6',
+                            lineJoin: 'round'
+                        });
+                        polylineLayerGroup.addLayer(line);
+                    }
+                }
+
+                // 2. Render Markers
+                const boundsList = [];
+                pointsToDisplay.forEach((point, idx) => {
+                    const stepNumber = idx + 1;
+                    const isStart = (idx === 0);
+                    const isEnd = (idx === pointsToDisplay.length - 1 && pointsToDisplay.length > 1);
+
+                    const icon = createNumberedMarkerIcon(stepNumber, isStart, isEnd);
+                    const marker = L.marker([point.latitude, point.longitude], { icon: icon });
+
+                    const detailUrl = Auth.url ? Auth.url('memory-details.html?id=' + point.memoryId) : ('memory-details.html?id=' + point.memoryId);
+                    const formattedDate = formatEditorialDate(point.memoryDate);
+
+                    const popupHtml = `
+                        <div class="map-popup-card">
+                            ${point.thumbnailUrl 
+                                ? `<img src="${point.thumbnailUrl}" class="map-popup-thumb" alt="${escapeHtml(point.title)}" onerror="this.style.display='none'" />` 
+                                : `<div style="height:90px; background:#0a0a0c; display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:2rem; border-bottom:2px solid #0a0a0c;">${point.moodEmoji || '🗺️'}</div>`
+                            }
+                            <div class="map-popup-body">
+                                <div class="map-popup-meta">
+                                    <span class="badge badge-primary">STOP ${String(stepNumber).padStart(2, '0')}</span>
+                                    <span class="mono-text" style="font-weight:700;">${formattedDate}</span>
+                                </div>
+                                <h4 class="map-popup-title" style="margin-top:0.4rem;">${escapeHtml(point.title)}</h4>
+                                ${point.locationName ? `<div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.75rem; font-family:'Space Grotesk',sans-serif;">📍 ${escapeHtml(point.locationName)}</div>` : ''}
+                                <div style="margin-top:0.75rem;">
+                                    <a href="${detailUrl}" class="btn btn-primary btn-sm" style="width:100%; letter-spacing:0.06em;">VIEW MEMORY &rarr;</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    marker.bindPopup(popupHtml);
+                    marker.on('click', () => {
+                        highlightTimelineCard(point.memoryId);
+                    });
+
+                    markerLayerGroup.addLayer(marker);
+                    markersMap.set(point.memoryId, marker);
+                    boundsList.push([point.latitude, point.longitude]);
+                });
+
+                // Auto Fit Bounds
+                if (boundsList.length > 0) {
+                    if (boundsList.length === 1) {
+                        map.setView(boundsList[0], 12);
+                    } else {
+                        map.fitBounds(L.latLngBounds(boundsList).pad(0.15));
+                    }
+                }
+
+                // 3. Render Journey Timeline List
+                renderTimelineArchive(pointsToDisplay);
+            }
+
+            // Render Timeline Stops List
+            function renderTimelineArchive(points) {
+                stopsList.innerHTML = '';
+                stopsBadge.textContent = `${points.length} STOP${points.length === 1 ? '' : 'S'}`;
+
+                points.forEach((point, idx) => {
+                    const stepNumber = String(idx + 1).padStart(2, '0');
+                    const isLast = (idx === points.length - 1);
+                    const formattedDate = formatEditorialDate(point.memoryDate);
+                    const detailUrl = Auth.url ? Auth.url('memory-details.html?id=' + point.memoryId) : ('memory-details.html?id=' + point.memoryId);
+
+                    const card = document.createElement('div');
+                    card.className = 'journey-timeline-card';
+                    card.id = `journey-card-${point.memoryId}`;
+                    card.setAttribute('data-memory-id', point.memoryId);
+
+                    card.innerHTML = `
+                        <div class="journey-step-badge">${stepNumber}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <div class="mono-text" style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase;">
+                                    ${escapeHtml(point.locationName || 'MAPPED LOCATION')}
+                                </div>
+                                <div class="mono-text" style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;">
+                                    ${formattedDate}
+                                </div>
+                            </div>
+                            <h4 style="font-size: 1.05rem; margin-bottom: 0.35rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${escapeHtml(point.title)}
+                            </h4>
+                            ${point.description ? `
+                                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${escapeHtml(point.description)}
+                                </p>
+                            ` : ''}
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                                <span class="badge badge-secondary" style="font-size: 0.7rem;">${point.moodEmoji || '📌'} ${escapeHtml(point.category || 'Travel')}</span>
+                                <a href="${detailUrl}" class="mono-text" style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary);" onclick="event.stopPropagation();">
+                                    VIEW MEMORY &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    `;
+
+                    // Click item to focus map and open marker popup
+                    card.addEventListener('click', () => {
+                        focusLocation(point);
+                    });
+
+                    stopsList.appendChild(card);
+
+                    // Add downward connector indicator if not last stop
+                    if (!isLast) {
+                        const arrow = document.createElement('div');
+                        arrow.className = 'journey-flow-arrow';
+                        arrow.innerHTML = '&#8595;';
+                        stopsList.appendChild(arrow);
+                    }
+                });
+            }
+
+            // Focus on a specific location
+            function focusLocation(point) {
+                highlightTimelineCard(point.memoryId);
+                const marker = markersMap.get(point.memoryId);
+                if (marker && map) {
+                    map.flyTo([point.latitude, point.longitude], Math.max(map.getZoom(), 11), {
+                        duration: 0.8
+                    });
+                    setTimeout(() => {
+                        marker.openPopup();
+                    }, 400);
+                }
+            }
+
+            // Highlight timeline card
+            function highlightTimelineCard(memoryId) {
+                document.querySelectorAll('.journey-timeline-card').forEach(c => c.classList.remove('active'));
+                const targetCard = document.getElementById(`journey-card-${memoryId}`);
+                if (targetCard) {
+                    targetCard.classList.add('active');
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            // Render Trip Selector Tabs
+            function renderTripTabs() {
+                tripTabsContainer.innerHTML = '';
+
+                // Tab 0: All Trips / Complete Journey
+                const allTab = document.createElement('button');
+                allTab.className = `trip-tab-btn ${currentSelectedTripIndex === -1 ? 'active' : ''}`;
+                allTab.textContent = `ALL EXPEDITIONS (${allJourneyPoints.length})`;
+                allTab.addEventListener('click', () => {
+                    currentSelectedTripIndex = -1;
+                    updateTripTabsActiveState();
+                    activeTripBadge.textContent = 'ALL EXPEDITIONS';
+                    renderJourneyView();
+                });
+                tripTabsContainer.appendChild(allTab);
+
+                // Individual trip tabs
+                groupedTrips.forEach((trip, idx) => {
+                    const startLoc = trip[0]?.locationName || 'Start';
+                    const endLoc = trip[trip.length - 1]?.locationName || 'End';
+                    const tripLabel = trip.length === 1 
+                        ? `${startLoc} (${formatShortMonthYear(trip[0].memoryDate)})`
+                        : `${startLoc} → ${endLoc} (${formatShortMonthYear(trip[0].memoryDate)})`;
+
+                    const tripTab = document.createElement('button');
+                    tripTab.className = `trip-tab-btn ${currentSelectedTripIndex === idx ? 'active' : ''}`;
+                    tripTab.textContent = `TRIP ${String(idx + 1).padStart(2, '0')}: ${tripLabel}`;
+                    tripTab.addEventListener('click', () => {
+                        currentSelectedTripIndex = idx;
+                        updateTripTabsActiveState();
+                        activeTripBadge.textContent = `TRIP ${String(idx + 1).padStart(2, '0')}`;
+                        renderJourneyView();
+                    });
+                    tripTabsContainer.appendChild(tripTab);
+                });
+            }
+
+            function updateTripTabsActiveState() {
+                const buttons = tripTabsContainer.querySelectorAll('.trip-tab-btn');
+                buttons.forEach((btn, idx) => {
+                    if (currentSelectedTripIndex === -1) {
+                        btn.classList.toggle('active', idx === 0);
+                    } else {
+                        btn.classList.toggle('active', idx === currentSelectedTripIndex + 1);
+                    }
+                });
+            }
+
+            // Update Summary Statistics
+            function updateSummaryStatistics(points) {
+                if (!points || points.length === 0) {
+                    document.getElementById('stat-places-visited').textContent = '0';
+                    document.getElementById('stat-memories-count').textContent = '0';
+                    document.getElementById('stat-cities-count').textContent = '0';
+                    document.getElementById('stat-travel-period').textContent = '—';
+                    document.getElementById('stat-route-distance').textContent = '0 KM';
+                    return;
+                }
+
+                // Unique coordinate places
+                const coordSet = new Set(points.map(p => `${p.latitude.toFixed(4)},${p.longitude.toFixed(4)}`));
+                document.getElementById('stat-places-visited').textContent = coordSet.size;
+
+                // Total memories
+                document.getElementById('stat-memories-count').textContent = points.length;
+
+                // Unique cities / location names
+                const citySet = new Set(points.filter(p => p.locationName).map(p => p.locationName.trim().toLowerCase()));
+                document.getElementById('stat-cities-count').textContent = Math.max(citySet.size, 1);
+
+                // Travel Period
+                const firstDate = new Date(points[0].memoryDate);
+                const lastDate = new Date(points[points.length - 1].memoryDate);
+                const firstYear = firstDate.getFullYear();
+                const lastYear = lastDate.getFullYear();
+
+                let periodText = `${firstYear}`;
+                if (firstYear !== lastYear) {
+                    periodText = `${firstYear} — ${lastYear}`;
+                } else {
+                    const m1 = firstDate.toLocaleDateString('en-GB', { month: 'short' });
+                    const m2 = lastDate.toLocaleDateString('en-GB', { month: 'short' });
+                    periodText = m1 === m2 ? `${m1} ${firstYear}` : `${m1} — ${m2} ${firstYear}`;
+                }
+                document.getElementById('stat-travel-period').textContent = periodText;
+
+                // Approximate distance along the route segments
+                let totalDistanceKm = 0;
+                groupedTrips.forEach(trip => {
+                    for (let i = 1; i < trip.length; i++) {
+                        totalDistanceKm += calculateDistanceKm(
+                            trip[i - 1].latitude, trip[i - 1].longitude,
+                            trip[i].latitude, trip[i].longitude
+                        );
+                    }
+                });
+
+                document.getElementById('stat-route-distance').textContent = `~${Math.round(totalDistanceKm).toLocaleString()} KM`;
+            }
+
+            // Fetch Journey Data
+            async function loadJourney() {
+                try {
+                    const data = await API.get('/api/memories/my-journey');
+                    
+                    // Filter memories with valid coordinates strictly
+                    allJourneyPoints = (data || []).filter(p => {
+                        const lat = parseFloat(p.latitude);
+                        const lng = parseFloat(p.longitude);
+                        return !isNaN(lat) && !isNaN(lng) && 
+                               lat >= -90 && lat <= 90 && 
+                               lng >= -180 && lng <= 180 &&
+                               (lat !== 0 || lng !== 0);
+                    });
+
+                    // Sort chronologically ascending (earliest to latest), then by memoryId
+                    allJourneyPoints.sort((a, b) => {
+                        const dateA = new Date(a.memoryDate).getTime();
+                        const dateB = new Date(b.memoryDate).getTime();
+                        if (dateA !== dateB) return dateA - dateB;
+                        return (a.memoryId || 0) - (b.memoryId || 0);
+                    });
+
+                    if (allJourneyPoints.length === 0) {
+                        emptyState.style.display = 'block';
+                        contentSection.style.display = 'none';
+                        updateSummaryStatistics([]);
+                        return;
+                    }
+
+                    emptyState.style.display = 'none';
+                    contentSection.style.display = 'block';
+
+                    // Group into trips
+                    groupedTrips = groupPointsIntoTrips(allJourneyPoints);
+
+                    // Update stats
+                    updateSummaryStatistics(allJourneyPoints);
+
+                    // Render trip tabs
+                    renderTripTabs();
+
+                    // Render Map & Itinerary
+                    renderJourneyView();
+
+                } catch (err) {
+                    console.error('Failed to load travel journey:', err);
+                    Toast.error('Failed to load personal travel journey.');
+                    emptyState.style.display = 'block';
+                    contentSection.style.display = 'none';
+                }
+            }
+
+            // Re-center / Fit bounds button
+            fitBtn.addEventListener('click', () => {
+                const pointsToFit = currentSelectedTripIndex === -1 
+                    ? allJourneyPoints 
+                    : (groupedTrips[currentSelectedTripIndex] || []);
+                if (map && pointsToFit.length > 0) {
+                    const bounds = pointsToFit.map(p => [p.latitude, p.longitude]);
+                    if (bounds.length === 1) {
+                        map.setView(bounds[0], 12);
+                    } else {
+                        map.fitBounds(L.latLngBounds(bounds).pad(0.15));
+                    }
+                }
+            });
+
+            await loadJourney();
+        });
+    </script>
+</body>
+</html>

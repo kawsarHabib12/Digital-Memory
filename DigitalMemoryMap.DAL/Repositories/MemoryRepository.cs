@@ -315,4 +315,20 @@ public class MemoryRepository : IMemoryRepository
         }
         return result;
     }
+
+    public async Task<List<Memory>> GetJourneyMemoriesAsync(int userId)
+    {
+        return await _context.Memories
+            .Include(m => m.Category)
+            .Include(m => m.Mood)
+            .Include(m => m.Photos)
+            .Where(m => m.UserId == userId 
+                     && m.Status == 1 
+                     && m.Latitude >= -90m && m.Latitude <= 90m 
+                     && m.Longitude >= -180m && m.Longitude <= 180m
+                     && (m.Latitude != 0m || m.Longitude != 0m))
+            .OrderBy(m => m.MemoryDate)
+            .ThenBy(m => m.MemoryId)
+            .ToListAsync();
+    }
 }
